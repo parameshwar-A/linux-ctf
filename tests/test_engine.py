@@ -63,19 +63,24 @@ class TestLinuxCTFEngine(unittest.TestCase):
         self.assertTrue(self.engine.is_image_built(r1.image_tag))
 
     def test_flag_verification(self):
+        from linux_ctf.engine.secrets import generate_session_secret
+
         r1 = self.registry.get_room("01")
         if not self.engine.is_image_built(r1.image_tag):
             self.engine.build_room_image(r1)
 
+        secret = generate_session_secret(r1.id)
+        self.engine.active_sessions[r1.id] = secret
+
         # Incorrect flag should fail
         ok, out = self.engine.test_flag_against_container(r1, "FLAG{bad_flag}")
         self.assertFalse(ok)
-        self.assertIn("INCORRECT FLAG", out)
+        self.assertIn("INCORRECT", out)
 
         # Correct flag should pass
-        ok, out = self.engine.test_flag_against_container(r1, "FLAG{l01_welcome_to_linux_shell_7f9b2d}")
+        ok, out = self.engine.test_flag_against_container(r1, secret.flag)
         self.assertTrue(ok)
-        self.assertIn("FLAG ACCEPTED", out)
+        self.assertIn("ACCEPTED", out)
 
 
 if __name__ == "__main__":

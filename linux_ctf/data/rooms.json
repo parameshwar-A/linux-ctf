@@ -1,0 +1,20 @@
+[
+  {
+    "id": "01",
+    "slug": "level01",
+    "title": "The Awakening",
+    "tier": "Beginner",
+    "commands": ["pwd", "ls"],
+    "mission": "Locate the hidden flag (.hidden_flag) concealed in your home directory.",
+    "hint": "Files starting with a '.' are hidden by default. Check 'man ls' to see how to list all files."
+  },
+  {
+    "id": "02",
+    "slug": "level02",
+    "title": "The Reading Room",
+    "tier": "Beginner",
+    "commands": ["cd", "cat"],
+    "mission": "Navigate through nested directories under 'archives' and read the secret document. Note: filenames may contain spaces!",
+    "hint": "Use 'cd' to change directories. Wrap filenames with spaces in quotes (e.g., cat 'top secret document.txt') or escape spaces with a backslash."
+  }
+]

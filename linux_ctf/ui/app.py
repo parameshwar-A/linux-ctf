@@ -40,7 +40,7 @@ class LinuxCTFApp(App):
     BINDINGS = [
         Binding("q", "quit", "Quit", show=True),
         Binding("r", "refresh_all", "Refresh", show=True),
-        Binding("b", "build_room", "Build", show=True),
+        Binding("p", "pull_room", "Pull", show=True),
         Binding("e", "enter_room", "Enter", show=True),
         Binding("c", "clean_room", "Clean Room", show=True),
         Binding("h", "toggle_hint", "Hint", show=True),
@@ -56,17 +56,17 @@ class LinuxCTFApp(App):
         self.hint_revealed: bool = False
 
     def _create_room_item(self, room: Room) -> RoomListItem:
-        is_built = self.engine.is_image_built(room.image_tag)
+        is_ready = self.engine.is_image_ready(room)
         is_running = self.engine.is_container_running(room.container_name)
 
         if is_running:
             status = "[RUNNING]"
             badge = "badge-running"
-        elif is_built:
+        elif is_ready:
             status = "[READY]"
             badge = "badge-ready"
         else:
-            status = "[NOT BUILT]"
+            status = "[NOT PULLED]"
             badge = "badge-unbuilt"
 
         return RoomListItem(room, status, badge)
@@ -88,7 +88,7 @@ class LinuxCTFApp(App):
 
                 # Action Toolbar (Single compact row)
                 with Grid(id="toolbar"):
-                    yield Button("Build", id="btn-build")
+                    yield Button("Pull", id="btn-pull")
                     yield Button("Enter", id="btn-enter")
                     yield Button("Clean", id="btn-clean")
                     yield Button("Show Hint", id="btn-hint")
@@ -152,22 +152,22 @@ class LinuxCTFApp(App):
             return
 
         room = self.selected_room
-        is_built = self.engine.is_image_built(room.image_tag)
+        is_ready = self.engine.is_image_ready(room)
         is_running = self.engine.is_container_running(room.container_name)
 
         if is_running:
             status_desc = "[bold cyan][RUNNING][/bold cyan] Active"
-        elif is_built:
+        elif is_ready:
             status_desc = "[bold green][READY][/bold green] Ready to enter"
         else:
-            status_desc = "[bold yellow][NOT BUILT][/bold yellow] Click [Build] or press 'b'"
+            status_desc = "[bold yellow][NOT PULLED][/bold yellow] Click [Pull] or press 'p'"
 
         # Update Header
         self.query_one("#room-title", Label).update(
             f"[bold cyan]ROOM {room.id} : {room.title.upper()}[/bold cyan]"
         )
         self.query_one("#room-meta", Label).update(
-            f"Tier: [white]{room.tier}[/white]  |  Image: [dim]{room.image_tag}[/dim]  |  Status: {status_desc}"
+            f"Tier: [white]{room.tier}[/white]  |  Image: [dim]{self.engine.get_image_tag(room)}[/dim]  |  Status: {status_desc}"
         )
 
         # Update Commands Chips (Use rich pill badges)
@@ -207,44 +207,37 @@ class LinuxCTFApp(App):
         self.notify("Refreshed all room statuses.", title="Linux CTF")
 
     @work(exclusive=True, thread=True)
-    def action_build_room(self) -> None:
+    def action_pull_room(self) -> None:
         if not self.selected_room:
             return
 
         room = self.selected_room
-        base_built = self.engine.is_image_built("linux-ctf-base:latest")
+        remote_tag = self.engine.get_image_tag(room)
+        self.notify(
+            f"Pulling {remote_tag} from Docker Hub...",
+            title=f"Pulling Room {room.id}",
+            severity="information",
+            timeout=8,
+        )
 
-        if not base_built:
-            self.notify(
-                "Building base image for the first time. This may take ~1 to 2 minutes...",
-                title="Building Base Sandbox",
-                severity="information",
-                timeout=8,
-            )
-        else:
-            self.notify(
-                f"Building challenge layer for Room {room.id} (takes ~3 to 5 seconds)...",
-                title=f"Building Room {room.id}",
-                severity="information",
-                timeout=4,
-            )
-
-        success, msg = self.engine.build_room_image(room)
+        success, msg = self.engine.pull_room_image(room)
         if success:
             self.notify(
-                f"Room {room.id} ({room.title}) is built and READY!",
-                title="Build Success",
+                f"Room {room.id} ({room.title}) is pulled and READY!",
+                title="Pull Success",
                 severity="information",
             )
         else:
             self.notify(
-                f"Build failed for Room {room.id}:\n{msg[:150]}",
-                title="Build Error",
+                f"Pull failed for Room {room.id}:\n{msg[:150]}",
+                title="Pull Error",
                 severity="error",
                 timeout=10,
             )
 
         self.app.call_from_thread(self.action_refresh_all)
+
+    action_build_room = action_pull_room
 
     def action_enter_room(self) -> None:
         if not self.selected_room:
@@ -252,10 +245,10 @@ class LinuxCTFApp(App):
 
         room = self.selected_room
 
-        # Strict check: Block entering if not ready/built
-        if not self.engine.is_image_built(room.image_tag):
+        # Strict check: Block entering if not ready/pulled
+        if not self.engine.is_image_ready(room):
             self.notify(
-                f"Room {room.id} is NOT READY!\nPlease build it first using the [Build] button (or 'b').",
+                f"Room {room.id} is NOT READY!\nPlease pull it first using the [Pull] button (or 'p').",
                 title="Room Not Ready",
                 severity="warning",
                 timeout=6,
@@ -307,8 +300,8 @@ class LinuxCTFApp(App):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         button_id = event.button.id
-        if button_id == "btn-build":
-            self.action_build_room()
+        if button_id in ("btn-pull", "btn-build"):
+            self.action_pull_room()
         elif button_id == "btn-enter":
             self.action_enter_room()
         elif button_id == "btn-clean":

@@ -45,7 +45,7 @@ python3 -m linux_ctf
 
 | Key | Action | Description |
 |---|---|---|
-| `b` | **Build** | Builds the room challenge image (or base sandbox if first run) |
+| `p` | **Pull** | Pulls the pre-built room challenge image from Docker Hub |
 | `e` | **Enter** | Launches interactive terminal session inside the container |
 | `c` | **Clean Room** | Prompts confirmation to stop active container and remove room image |
 | `h` | **Hint** | Toggles room hint reveal |
@@ -60,28 +60,28 @@ python3 -m linux_ctf
 Linux CTF provides a headless CLI via `linux_ctf.cli`:
 
 ```bash
-# List all available rooms and their current build/running status
+# List all available rooms and their current pull/running status
 python3 -m linux_ctf.cli list
 
 # Show detailed room briefing, tier, and target commands
 python3 -m linux_ctf.cli show 01
 
-# Build the container image for a room
-python3 -m linux_ctf.cli build 01
+# Pull the pre-built container image for a room from Docker Hub
+python3 -m linux_ctf.cli pull 01
 
-# Enter an interactive session in the room
+# Enter an interactive session in the room (generates dynamic session flag)
 python3 -m linux_ctf.cli enter 01
 
 # Stop an active container for a room
 python3 -m linux_ctf.cli stop 01
 
 # Test a flag non-interactively
-python3 -m linux_ctf.cli verify 01 "FLAG{l01_welcome_to_linux_shell_7f9b2d}"
+python3 -m linux_ctf.cli verify 01 "FLAG{...}"
 
 # Clean up container and delete room image
 python3 -m linux_ctf.cli clean-room 01
 
-# Clean up all built rooms
+# Clean up all pulled rooms
 python3 -m linux_ctf.cli clean-room --all
 ```
 
@@ -101,27 +101,23 @@ Once inside a room session (`python3 -m linux_ctf.cli enter <id>` or pressing `e
 
 ---
 
-## Developer Utilities
+## Lab Utilities
 
-A helper script (`scripts/lab.sh`) is provided for developers and challenge authors:
-
+### Player / Lab Runner (`scripts/lab.sh`)
 ```bash
-# Build the shared base image (Debian Bookworm + coreutils + man-db + gcc)
-./scripts/lab.sh build-base
+# Pull a room image from Docker Hub
+./scripts/lab.sh pull 01
 
-# Build a specific room
-./scripts/lab.sh build 01
+# Pull all room images
+./scripts/lab.sh pull-all
 
 # Launch container session directly via podman
 ./scripts/lab.sh run 01
 
-# Run automated validation test on a room (tests wrong flag & correct flag)
-./scripts/lab.sh test 01
-
 # Clean a specific room container and image
 ./scripts/lab.sh clean-room 01
 
-# Clean all built rooms
+# Clean all room containers and images
 ./scripts/lab.sh clean-rooms
 ```
 
@@ -138,28 +134,22 @@ python3 -m unittest discover tests
 ## Architecture Overview
 
 ```
-02_linux_ctf/
-├── common/
-│   ├── Containerfile.base        # Shared base image (Debian Bookworm slim)
-│   ├── validator/
-│   │   └── submit_flag.c         # Hardened compile-time SHA-256 C validator
-│   └── scripts/
-│       └── motd_banner.sh        # In-container login MOTD generator
+linux-ctf/
 ├── linux_ctf/
+│   ├── data/
+│   │   └── rooms.json            # Packaged curriculum manifest (missions, commands)
 │   ├── models.py                 # Room data models
 │   ├── cli.py                    # Command-line interface
 │   ├── engine/
-│   │   ├── podman.py             # Rootless Podman orchestration engine
-│   │   └── rooms.py              # Room discovery & metadata parser
+│   │   ├── podman.py             # Rootless Podman orchestration & pull engine
+│   │   ├── rooms.py              # Room discovery & manifest parser
+│   │   └── secrets.py            # Ephemeral session secret & flag generator
 │   └── ui/
 │       ├── app.py                # Textual TUI dashboard
 │       ├── styles.tcss           # Terminal styling and layout
 │       └── screens/              # Modal dialogs (Submit, Confirm Clean)
-├── rooms/
-│   ├── level01/                  # Room 01: The Awakening (pwd, ls)
-│   └── level02/                  # Room 02: The Reading Room (cd, cat)
 ├── scripts/
-│   ├── lab.sh                    # Developer automation script
+│   ├── lab.sh                    # Player runner script
 │   └── tui.sh                    # TUI startup launcher
 ├── tests/                        # Automated unit and integration tests
 ├── .gitignore                    # Git ignore configuration

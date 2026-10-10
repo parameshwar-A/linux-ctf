@@ -26,15 +26,15 @@ def cmd_list(registry: RoomRegistry, engine: PodmanEngine, args: argparse.Namesp
     print("-" * 75)
 
     for room in rooms:
-        is_built = engine.is_image_built(room.image_tag)
+        is_ready = engine.is_image_ready(room)
         is_running = engine.is_container_running(room.container_name)
 
         if is_running:
             status = f"{C_GREEN}RUNNING{C_RESET}"
-        elif is_built:
+        elif is_ready:
             status = f"{C_CYAN}READY{C_RESET}"
         else:
-            status = f"{C_GRAY}NOT BUILT{C_RESET}"
+            status = f"{C_GRAY}NOT PULLED{C_RESET}"
 
         cmds = ", ".join(room.commands)
         print(f"{room.id:<4} {room.title:<25} {room.tier:<10} {status:<21} {cmds}")
@@ -50,7 +50,7 @@ def cmd_show(registry: RoomRegistry, engine: PodmanEngine, args: argparse.Namesp
         print(f"{C_RED}[-] Room '{args.room_id}' not found.{C_RESET}")
         return 1
 
-    is_built = engine.is_image_built(room.image_tag)
+    is_ready = engine.is_image_ready(room)
     is_running = engine.is_container_running(room.container_name)
 
     print(f"\n{C_CYAN}{C_BOLD}======================================================================{C_RESET}")
@@ -58,7 +58,7 @@ def cmd_show(registry: RoomRegistry, engine: PodmanEngine, args: argparse.Namesp
     print(f"{C_CYAN}======================================================================{C_RESET}")
     print(f"  {C_YELLOW}Tier:{C_RESET}       {room.tier}")
     print(f"  {C_YELLOW}Commands:{C_RESET}   {', '.join(room.commands)}")
-    print(f"  {C_YELLOW}Container:{C_RESET}  {room.image_tag} ({'Built' if is_built else 'Not built'})")
+    print(f"  {C_YELLOW}Container:{C_RESET}  {engine.get_image_tag(room)} ({'Ready' if is_ready else 'Not pulled'})")
     print(f"  {C_YELLOW}Active:{C_RESET}     {'Yes' if is_running else 'No'}")
     print(f"  {C_YELLOW}Mission:{C_RESET}    {room.mission}")
     print(f"  {C_YELLOW}Hint:{C_RESET}       {room.hint}")
@@ -68,28 +68,25 @@ def cmd_show(registry: RoomRegistry, engine: PodmanEngine, args: argparse.Namesp
     return 0
 
 
-def cmd_build(registry: RoomRegistry, engine: PodmanEngine, args: argparse.Namespace) -> int:
+def cmd_pull(registry: RoomRegistry, engine: PodmanEngine, args: argparse.Namespace) -> int:
     room = registry.get_room(args.room_id)
     if not room:
         print(f"{C_RED}[-] Room '{args.room_id}' not found.{C_RESET}")
         return 1
 
-    print(f"\n{C_YELLOW}[*] Preparing to build Room {room.id} ({room.image_tag})...{C_RESET}")
-    if not engine.is_image_built("linux-ctf-base:latest"):
-        print(f"{C_CYAN}[i] Notice: Base sandbox image is being built for the first time.")
-        print(f"    This may take ~1 to 2 minutes while installing coreutils, gcc, and indexing man pages.")
-        print(f"    Please wait...{C_RESET}")
-    else:
-        print(f"{C_CYAN}[i] Notice: Base image is ready. Building room challenge layer (takes ~3 to 5 seconds)...{C_RESET}")
-
-    success, output = engine.build_room_image(room)
+    remote_tag = engine.get_image_tag(room)
+    print(f"\n{C_YELLOW}[*] Pulling Room {room.id} image ({remote_tag})...{C_RESET}")
+    success, output = engine.pull_room_image(room)
     if success:
-        print(f"{C_GREEN}[+] Room {room.id} image built successfully and is READY!{C_RESET}")
+        print(f"{C_GREEN}[+] Room {room.id} image pulled successfully and is READY!{C_RESET}")
         print(f"{C_GREEN}[+] Enter room anytime with: python3 -m linux_ctf.cli enter {room.id}{C_RESET}\n")
         return 0
     else:
-        print(f"{C_RED}[-] Build failed:\n{output}{C_RESET}\n")
+        print(f"{C_RED}[-] Pull failed:\n{output}{C_RESET}\n")
         return 1
+
+
+cmd_build = cmd_pull
 
 
 def cmd_enter(registry: RoomRegistry, engine: PodmanEngine, args: argparse.Namespace) -> int:
@@ -98,10 +95,10 @@ def cmd_enter(registry: RoomRegistry, engine: PodmanEngine, args: argparse.Names
         print(f"{C_RED}[-] Room '{args.room_id}' not found.{C_RESET}")
         return 1
 
-    if not engine.is_image_built(room.image_tag):
+    if not engine.is_image_ready(room):
         print(f"\n{C_RED}[!] Room {room.id} is NOT READY!{C_RESET}")
-        print(f"{C_YELLOW}[*] You must build the room image before entering:{C_RESET}")
-        print(f"    {C_CYAN}python3 -m linux_ctf.cli build {room.id}{C_RESET}\n")
+        print(f"{C_YELLOW}[*] You must pull the room image before entering:{C_RESET}")
+        print(f"    {C_CYAN}python3 -m linux_ctf.cli pull {room.id}{C_RESET}\n")
         return 1
 
     print(f"{C_GREEN}[*] Launching interactive session for Room {room.id}: {room.title}...{C_RESET}")
@@ -188,9 +185,9 @@ def main() -> int:
     sub_show = subparsers.add_parser("show", help="Display details for a specific room")
     sub_show.add_argument("room_id", help="Room identifier (e.g. 01, level01)")
 
-    # build
-    sub_build = subparsers.add_parser("build", help="Build the container image for a room")
-    sub_build.add_argument("room_id", help="Room identifier (e.g. 01, level01)")
+    # pull (and alias build)
+    sub_pull = subparsers.add_parser("pull", aliases=["build"], help="Pull the container image for a room from Docker Hub")
+    sub_pull.add_argument("room_id", help="Room identifier (e.g. 01, level01)")
 
     # enter / start
     sub_enter = subparsers.add_parser("enter", help="Start or attach to an interactive room container")
@@ -236,8 +233,8 @@ def main() -> int:
         return cmd_list(registry, engine, args)
     elif args.command == "show":
         return cmd_show(registry, engine, args)
-    elif args.command == "build":
-        return cmd_build(registry, engine, args)
+    elif args.command in ("pull", "build"):
+        return cmd_pull(registry, engine, args)
     elif args.command == "enter":
         return cmd_enter(registry, engine, args)
     elif args.command == "stop":

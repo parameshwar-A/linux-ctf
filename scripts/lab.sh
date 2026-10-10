@@ -1,23 +1,26 @@
 #!/usr/bin/env bash
-# Linux CTF - Developer / Lab Runner Utility
+# ==============================================================================
+# Linux CTF - Player / Lab Runner Utility (Base Repo)
+# ==============================================================================
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$SCRIPT_DIR"
 
+DOCKER_USER="${DOCKER_USER:-paramesh}"
+
 usage() {
     echo "Linux CTF - Lab Runner"
     echo "Usage: $0 [command] [args]"
     echo ""
     echo "Commands:"
-    echo "  build-base          Build the shared base image (linux-ctf-base:latest)"
-    echo "  build <room_id>     Build a specific room (e.g. 01, level01)"
-    echo "  run <room_id>       Launch an interactive session in the room container"
-    echo "  test <room_id>      Run automated validation test on a room"
-    echo "  clean-room <id>     Clean up a room (stop container and remove image)"
-    echo "  clean-rooms         Clean up all built rooms"
-    echo "  clean               Remove lingering CTF containers"
+    echo "  pull <room_id> [username]   Pull room image from Docker Hub"
+    echo "  pull-all [username]         Pull all room images from Docker Hub"
+    echo "  run <room_id>               Launch interactive session in the room container"
+    echo "  clean-room <id>             Clean up a room (stop container and remove image)"
+    echo "  clean-rooms                 Clean up all room containers and images"
+    echo "  clean                       Remove lingering CTF containers"
     echo ""
     exit 1
 }
@@ -32,66 +35,49 @@ cmd="${1:-}"
 shift || true
 
 case "$cmd" in
-    build-base)
-        echo "[*] Building linux-ctf-base:latest..."
-        echo "[i] Notice: This may take ~1 to 2 minutes while downloading packages and indexing man pages. Please wait..."
-        podman build -t linux-ctf-base:latest -f common/Containerfile.base .
-        echo "[+] Base image built successfully."
-        ;;
-    build)
+    pull)
         room_num=$(normalize_room "${1:-01}")
-        room_dir="rooms/level${room_num}"
-        if [ ! -d "$room_dir" ]; then
-            echo "[-] Room directory $room_dir does not exist."
-            exit 1
-        fi
-        echo "[*] Building room level${room_num}..."
-        if ! podman image exists "linux-ctf-base:latest"; then
-            echo "[i] Notice: Base image missing. First-time build will take ~1 to 2 minutes. Please wait..."
-        else
-            echo "[i] Notice: Base image is ready. Building room challenge layer (takes ~3 to 5 seconds). Please wait..."
-        fi
-        podman build -t "linux-ctf-level${room_num}:latest" -f "${room_dir}/Containerfile" .
-        echo "[+] Room level${room_num} built successfully and is READY."
+        user="${2:-$DOCKER_USER}"
+        remote_tag="docker.io/${user}/linux-ctf-level${room_num}:latest"
+        echo "[*] Pulling ${remote_tag} from Docker Hub..."
+        podman pull "$remote_tag"
+        podman tag "$remote_tag" "linux-ctf-level${room_num}:latest"
+        echo "[+] Successfully pulled Room ${room_num}."
+        ;;
+    pull-all)
+        user="${1:-$DOCKER_USER}"
+        echo "[*] Pulling all rooms from Docker Hub (${user})..."
+        for i in {1..15}; do
+            rnum=$(printf "%02d" "$i")
+            remote_tag="docker.io/${user}/linux-ctf-level${rnum}:latest"
+            if podman pull "$remote_tag" 2>/dev/null; then
+                podman tag "$remote_tag" "linux-ctf-level${rnum}:latest"
+                echo "[+] Pulled Room ${rnum}."
+            fi
+        done
+        echo "[+] Pull complete."
         ;;
     run)
         room_num=$(normalize_room "${1:-01}")
         tag="linux-ctf-level${room_num}:latest"
         if ! podman image exists "$tag"; then
-            echo "[-] Room level${room_num} is NOT ready!"
-            echo "[*] Please build the room image first by running:"
-            echo "    $0 build ${room_num}"
+            echo "[-] Room level${room_num} image is not present locally!"
+            echo "[*] Please pull the image first by running:"
+            echo "    $0 pull ${room_num}"
             exit 1
         fi
-        echo "[*] Entering room level${room_num}..."
+        echo "[*] Entering room level${room_num} with dynamic session secret..."
+        test_flag="FLAG{l${room_num}_interactive_$(head -c 4 /dev/urandom | xxd -p)}"
+        test_salt="$(head -c 8 /dev/urandom | xxd -p)"
+        test_hash=$(echo -n "${test_flag}::${test_salt}" | sha256sum | cut -d' ' -f1)
+
         podman run --rm -it \
             --name "linux-ctf-room-${room_num}" \
             --hostname "ctf-room${room_num}" \
+            -e CTF_FLAG="$test_flag" \
+            -e CTF_SALT="$test_salt" \
+            -e CTF_HASH="$test_hash" \
             "$tag"
-        ;;
-    test)
-        room_num=$(normalize_room "${1:-01}")
-        tag="linux-ctf-level${room_num}:latest"
-        metadata="rooms/level${room_num}/metadata.json"
-        if [ ! -f "$metadata" ]; then
-            echo "[-] Metadata file $metadata not found."
-            exit 1
-        fi
-        if ! podman image exists "$tag"; then
-            echo "[-] Room level${room_num} is not built yet. Please run: $0 build ${room_num}"
-            exit 1
-        fi
-        flag=$(grep -o '"flag": *"[^"]*"' "$metadata" | cut -d'"' -f4)
-        echo "[*] Testing room level${room_num} with flag: $flag"
-        
-        # Test wrong flag
-        echo "[*] Testing INCORRECT flag..."
-        podman run --rm "$tag" /usr/local/bin/submit-flag "FLAG{wrong_guess}" || true
-        
-        # Test correct flag
-        echo "[*] Testing CORRECT flag..."
-        podman run --rm "$tag" /usr/local/bin/submit-flag "$flag"
-        echo "[+] Verification test passed!"
         ;;
     clean)
         echo "[*] Cleaning up linux-ctf containers..."

@@ -13,8 +13,8 @@ class Room:
     commands: List[str]
     mission: str
     hint: str
-    salt: str
-    hash: str
+    salt: str = ""
+    hash: str = ""
     path: Path = field(default_factory=Path)
 
     @property

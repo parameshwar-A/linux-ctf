@@ -44,6 +44,9 @@ RUN echo 'if [ -f /usr/local/bin/motd_banner ]; then /usr/local/bin/motd_banner;
     && echo 'PS1="\[\033[1;32m\]learner@linux-ctf\[\033[0m\]:\[\033[1;34m\]\w\[\033[0m\]\$ "' >> /home/learner/.bashrc \
     && chown learner:learner /home/learner/.bashrc
 
+COPY common/scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod 755 /usr/local/bin/entrypoint.sh
+
 WORKDIR /home/learner
-USER learner
-CMD ["/bin/bash"]
+USER root
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

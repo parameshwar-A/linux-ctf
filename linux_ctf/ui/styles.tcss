@@ -116,12 +116,12 @@ RoomListItem Horizontal {
     text-style: bold;
 }
 
-#btn-build {
+#btn-pull, #btn-build {
     background: #1f6feb;
     color: #ffffff;
 }
 
-#btn-build:hover {
+#btn-pull:hover, #btn-build:hover {
     background: #388bfd;
 }
 
