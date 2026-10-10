@@ -1,0 +1,49 @@
+# Base Image for Linux CTF Labs
+FROM debian:bookworm-slim
+
+# Avoid interactive prompts during apt
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TERM=xterm-256color
+
+# Install GNU core utilities, man pages, documentation, text utilities, and build tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
+    coreutils \
+    man-db \
+    manpages \
+    manpages-dev \
+    less \
+    file \
+    bsdextrautils \
+    gcc \
+    libc6-dev \
+    procps \
+    tree \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Restore man pages (Debian slim excludes them by default via dpkg excludes)
+RUN rm -f /etc/dpkg/dpkg.cfg.d/excludes || true
+RUN apt-get update && apt-get install -y --reinstall \
+    man-db \
+    manpages \
+    coreutils \
+    && rm -rf /var/lib/apt/lists/* \
+    && mandb -c
+
+# Create non-root learner user
+RUN useradd -m -s /bin/bash learner
+
+# Copy common assets
+COPY common/validator/submit_flag.c /opt/linux_ctf/submit_flag.c
+COPY common/scripts/motd_banner.sh /usr/local/bin/motd_banner
+RUN chmod 755 /usr/local/bin/motd_banner
+
+# Setup global bashrc hook so MOTD prints on shell start
+RUN echo 'if [ -f /usr/local/bin/motd_banner ]; then /usr/local/bin/motd_banner; fi' >> /etc/bash.bashrc \
+    && echo 'PS1="\[\033[1;32m\]learner@linux-ctf\[\033[0m\]:\[\033[1;34m\]\w\[\033[0m\]\$ "' >> /home/learner/.bashrc \
+    && chown learner:learner /home/learner/.bashrc
+
+WORKDIR /home/learner
+USER learner
+CMD ["/bin/bash"]

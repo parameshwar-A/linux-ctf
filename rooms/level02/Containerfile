@@ -1,0 +1,9 @@
+FROM linux-ctf-base:latest
+
+USER root
+COPY rooms/level02/setup.sh /tmp/setup.sh
+RUN bash /tmp/setup.sh && rm -f /tmp/setup.sh
+
+USER learner
+WORKDIR /home/learner
+CMD ["/bin/bash"]

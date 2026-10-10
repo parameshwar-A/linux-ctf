@@ -1,0 +1,48 @@
+# ==============================================================================
+# Git Ignore Configuration - Linux CTF
+# ==============================================================================
+
+# Markdown Coverage: Ignore all markdown files EXCEPT the root README.md
+*.md
+!/README.md
+!README.md
+
+# Python Bytecode and Runtime Caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+.env/
+
+# Package Builds & Distribution
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# IDE & Editor Configurations
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Operating System & Temporary Files
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.svg
