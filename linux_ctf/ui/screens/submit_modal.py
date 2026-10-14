@@ -47,8 +47,8 @@ class SubmitModal(ModalScreen[bool]):
             feedback.set_class(True, "error-text")
             return
 
-        if not self.engine.is_image_built(self.room.image_tag):
-            feedback.update("[-] Room image is not built yet! Please build it first.")
+        if not self.engine.is_image_ready(self.room):
+            feedback.update("[-] Room image is not pulled yet! Please pull it first using [Pull].")
             feedback.set_class(True, "error-text")
             return
 

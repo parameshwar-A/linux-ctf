@@ -160,9 +160,9 @@ def cmd_verify(registry: RoomRegistry, engine: PodmanEngine, args: argparse.Name
         print(f"{C_RED}[-] Room '{args.room_id}' not found.{C_RESET}")
         return 1
 
-    if not engine.is_image_built(room.image_tag):
-        print(f"{C_RED}[!] Room {room.id} image is not built yet. Please build it first:{C_RESET}")
-        print(f"    {C_CYAN}python3 -m linux_ctf.cli build {room.id}{C_RESET}")
+    if not engine.is_image_ready(room):
+        print(f"{C_RED}[!] Room {room.id} image is not pulled yet. Please pull it first:{C_RESET}")
+        print(f"    {C_CYAN}python3 -m linux_ctf.cli pull {room.id}{C_RESET}")
         return 1
 
     print(f"{C_YELLOW}[*] Testing flag against Room {room.id}...{C_RESET}")

@@ -9,9 +9,11 @@ logger = logging.getLogger(__name__)
 
 
 def find_project_root() -> Path:
-    """Finds the root directory containing the rooms/ folder."""
+    """Finds the root directory containing the project."""
     current = Path(__file__).resolve().parent
     for parent in [current, *current.parents]:
+        if (parent / "linux_ctf").is_dir() and (parent / "README.md").is_file():
+            return parent
         if (parent / "rooms").is_dir() and (parent / "common").is_dir():
             return parent
     return Path.cwd()

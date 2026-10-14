@@ -3,6 +3,7 @@ import unittest
 from linux_ctf.models import Room
 from linux_ctf.engine.rooms import RoomRegistry
 from linux_ctf.engine.podman import PodmanEngine, PodmanError
+from linux_ctf.engine.secrets import generate_session_secret
 
 
 class TestLinuxCTFEngine(unittest.TestCase):
@@ -24,7 +25,7 @@ class TestLinuxCTFEngine(unittest.TestCase):
         self.assertEqual(self.registry.get_room("01").id, "01")
         self.assertEqual(self.registry.get_room("level01").id, "01")
 
-    def test_unbuilt_room_blocked_from_enter(self):
+    def test_unpulled_room_blocked_from_enter(self):
         dummy_room = Room(
             id="99",
             slug="level99",
@@ -37,37 +38,23 @@ class TestLinuxCTFEngine(unittest.TestCase):
             hash="",
             path=Path("/tmp/nonexistent_level99"),
         )
-        self.assertFalse(self.engine.is_image_built(dummy_room.image_tag))
+        self.assertFalse(self.engine.is_image_ready(dummy_room))
         with self.assertRaises(PodmanError):
             self.engine.start_interactive_session(dummy_room)
 
-    def test_image_build_and_cleanup(self):
+    def test_image_readiness_and_registry_tag(self):
         r1 = self.registry.get_room("01")
-        self.assertTrue(self.engine.is_image_built("linux-ctf-base:latest"))
-
-        # Ensure r1 image exists
-        if not self.engine.is_image_built(r1.image_tag):
-            ok, msg = self.engine.build_room_image(r1)
-            self.assertTrue(ok)
-
-        self.assertTrue(self.engine.is_image_built(r1.image_tag))
-
-        # Test cleaning room
-        ok, msg = self.engine.clean_room(r1)
-        self.assertTrue(ok)
-        self.assertFalse(self.engine.is_image_built(r1.image_tag))
-
-        # Rebuild room image
-        ok, msg = self.engine.build_room_image(r1)
-        self.assertTrue(ok)
-        self.assertTrue(self.engine.is_image_built(r1.image_tag))
+        self.assertIn("paramesh273", self.engine.get_image_tag(r1))
+        # Pull pre-built image as usual if not already present
+        if not self.engine.is_image_ready(r1):
+            success, msg = self.engine.pull_room_image(r1)
+            self.assertTrue(success, f"Failed to pull image for room 01: {msg}")
+        self.assertTrue(self.engine.is_image_ready(r1))
 
     def test_flag_verification(self):
-        from linux_ctf.engine.secrets import generate_session_secret
-
         r1 = self.registry.get_room("01")
-        if not self.engine.is_image_built(r1.image_tag):
-            self.engine.build_room_image(r1)
+        if not self.engine.is_image_ready(r1):
+            self.engine.pull_room_image(r1)
 
         secret = generate_session_secret(r1.id)
         self.engine.active_sessions[r1.id] = secret

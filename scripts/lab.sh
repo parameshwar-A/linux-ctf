@@ -8,7 +8,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$SCRIPT_DIR"
 
-DOCKER_USER="${DOCKER_USER:-paramesh}"
+DOCKER_USER="${DOCKER_USER:-paramesh273}"
 
 usage() {
     echo "Linux CTF - Lab Runner"

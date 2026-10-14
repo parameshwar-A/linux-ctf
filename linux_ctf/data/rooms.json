@@ -4,7 +4,10 @@
     "slug": "level01",
     "title": "The Awakening",
     "tier": "Beginner",
-    "commands": ["pwd", "ls"],
+    "commands": [
+      "pwd",
+      "ls"
+    ],
     "mission": "Locate the hidden flag (.hidden_flag) concealed in your home directory.",
     "hint": "Files starting with a '.' are hidden by default. Check 'man ls' to see how to list all files."
   },
@@ -13,8 +16,166 @@
     "slug": "level02",
     "title": "The Reading Room",
     "tier": "Beginner",
-    "commands": ["cd", "cat"],
-    "mission": "Navigate through nested directories under 'archives' and read the secret document. Note: filenames may contain spaces!",
-    "hint": "Use 'cd' to change directories. Wrap filenames with spaces in quotes (e.g., cat 'top secret document.txt') or escape spaces with a backslash."
+    "commands": [
+      "cd",
+      "cat"
+    ],
+    "mission": "Navigate into 'archives/classified/2026' and read the secret document. Beware of spaces in filenames!",
+    "hint": "Use 'cd' to change into directories. Wrap filenames with spaces in quotes or escape with a backslash: cat 'top secret document.txt'"
+  },
+  {
+    "id": "03",
+    "slug": "level03",
+    "title": "Ink and Paper",
+    "tier": "Beginner",
+    "commands": [
+      "echo",
+      ">",
+      ">>"
+    ],
+    "mission": "The server launch daemon is awaiting configuration in 'dispatch.conf'. Use 'echo' with redirection ('>' and '>>') to write the required configuration keys. Once completed, execute './verify_dispatch' to reveal your flag!",
+    "hint": "Write 'MODE=ACTIVE' using '>' (overwrites), and 'TARGET=PRODUCTION' using '>>' (appends without overwriting). Check your work with 'cat dispatch.conf'."
+  },
+  {
+    "id": "04",
+    "slug": "level04",
+    "title": "Housekeeping",
+    "tier": "Beginner",
+    "commands": [
+      "cp",
+      "mv"
+    ],
+    "mission": "An archive payload was misplaced as 'staging/temp_payload.dat'. Move it to 'production/app_payload.dat', and create a duplicate backup copy at 'backups/app_payload.dat'. Run './check_production' to verify!",
+    "hint": "Use 'mv staging/temp_payload.dat production/app_payload.dat' to move and rename, then 'cp production/app_payload.dat backups/app_payload.dat' to duplicate. Verify with './check_production'."
+  },
+  {
+    "id": "05",
+    "slug": "level05",
+    "title": "Excavation",
+    "tier": "Beginner",
+    "commands": [
+      "mkdir",
+      "rm",
+      "rmdir"
+    ],
+    "mission": "The storage area 'sandbox/clutter' is full of junk. Locate 'sandbox/clutter/secret_key.txt' (which contains the flag), create the directory 'sandbox/secure_vault', and move the key into it. Run './verify_vault' to complete the mission!",
+    "hint": "Use 'mkdir -p sandbox/secure_vault' to create the vault directory, then move 'sandbox/clutter/secret_key.txt' into it. Read the key with 'cat'."
+  },
+  {
+    "id": "06",
+    "slug": "level06",
+    "title": "Compass and Map",
+    "tier": "Beginner",
+    "commands": [
+      "which",
+      "whereis"
+    ],
+    "mission": "A custom diagnostic binary 'sec-beacon' is installed on the system PATH. Locate it using 'which' or 'whereis', and execute it to extract the beacon key!",
+    "hint": "Run 'which sec-beacon' to display its path, then execute it simply by typing 'sec-beacon'."
+  },
+  {
+    "id": "07",
+    "slug": "level07",
+    "title": "Disguised Identities",
+    "tier": "Beginner",
+    "commands": [
+      "file"
+    ],
+    "mission": "Inspect the files inside 'suspects/'. All files have misleading extensions (.png, .mp3, .pdf, .bin, .tar). Exactly one file is an ASCII text file containing the mission flag. Use 'file' to discover it!",
+    "hint": "Run 'file suspects/*' to analyze file signatures. Identify the ASCII text file and view it with 'cat'."
+  },
+  {
+    "id": "08",
+    "slug": "level08",
+    "title": "Head and Shoulders",
+    "tier": "Beginner",
+    "commands": [
+      "head",
+      "tail"
+    ],
+    "mission": "The telemetry stream 'sensor_stream.log' contains 1,000 lines of data. The mission flag is recorded precisely at line 500. Use 'head' and 'tail' to extract line 500!",
+    "hint": "Pipe 'head' into 'tail': 'head -n 500 sensor_stream.log | tail -n 1' to isolate the exact line."
+  },
+  {
+    "id": "09",
+    "slug": "level09",
+    "title": "By the Numbers",
+    "tier": "Beginner",
+    "commands": [
+      "wc"
+    ],
+    "mission": "The folder 'transcripts/' holds multiple candidate files. The authentic classified debrief has exactly 42 lines. Use 'wc -l' to find the 42-line file and read the flag!",
+    "hint": "Run 'wc -l transcripts/*' to see the line counts of all files. Find the 42-line file, then inspect it with 'cat'."
+  },
+  {
+    "id": "10",
+    "slug": "level10",
+    "title": "The Lone Survivor",
+    "tier": "Beginner",
+    "commands": [
+      "sort",
+      "uniq"
+    ],
+    "mission": "The file 'transaction_hashes.txt' contains 200 transaction tokens with duplicates. Exactly one token is unique without any duplicate. Use 'sort' and 'uniq -u' to filter out duplicates and isolate the flag!",
+    "hint": "Sort the file before deduplication: 'sort transaction_hashes.txt | uniq -u'."
+  },
+  {
+    "id": "11",
+    "slug": "level11",
+    "title": "Cipher Shift",
+    "tier": "Beginner",
+    "commands": [
+      "tr"
+    ],
+    "mission": "An intercepted transmission 'intercepted.enc' was scrambled using a classic ROT13 cipher. Decipher the message using 'tr' to reveal the plaintext flag!",
+    "hint": "Use 'tr' to translate character sets: tr 'A-Za-z' 'N-ZA-Mn-za-m' < intercepted.enc."
+  },
+  {
+    "id": "12",
+    "slug": "level12",
+    "title": "The Log Whisperer",
+    "tier": "Beginner",
+    "commands": [
+      "grep"
+    ],
+    "mission": "The 'logs/' directory contains dozens of access logs with thousands of web requests. Find the suspicious entry tagged with error code 'ERR_LEAK_9918' and extract the leaked flag!",
+    "hint": "Use 'grep -rn \"ERR_LEAK_9918\" logs/' to recursively search all log files and display line numbers."
+  },
+  {
+    "id": "13",
+    "slug": "level13",
+    "title": "Needle in the Haystack",
+    "tier": "Beginner",
+    "commands": [
+      "find"
+    ],
+    "mission": "The 'storage/' directory contains deeply nested folders and decoy files. Find the file named 'access.key' that has a file size greater than 50 bytes using 'find' to discover the flag!",
+    "hint": "Run 'find storage/ -name \"access.key\" -size +50c' to search by name and size, then 'cat' the matching file."
+  },
+  {
+    "id": "14",
+    "slug": "level14",
+    "title": "The Vault",
+    "tier": "Beginner",
+    "commands": [
+      "tar",
+      "gzip"
+    ],
+    "mission": "A compressed archive 'classified_vault.tar.gz' has arrived. Decompress and unpack the archive using 'tar' to inspect 'vault_data/credentials.txt' and retrieve the flag!",
+    "hint": "Run 'tar -xzf classified_vault.tar.gz' to decompress and extract the archive contents."
+  },
+  {
+    "id": "15",
+    "slug": "level15",
+    "title": "Master of the Shell",
+    "tier": "Beginner",
+    "commands": [
+      "|",
+      "cut",
+      "sort",
+      "uniq"
+    ],
+    "mission": "Capstone Challenge! Analyze the telemetry file 'network_traffic.csv'. Extract the client IP addresses (column 2), filter by port '443', count occurrences with 'uniq -c', and find the IP with the highest traffic volume. Once identified, run './report_attacker <IP>' to earn the master flag!",
+    "hint": "Build a pipeline: 'grep \",443,\" network_traffic.csv | cut -d\",\" -f2 | sort | uniq -c | sort -nr | head -n 1'. Then execute './report_attacker <IP>'."
   }
 ]

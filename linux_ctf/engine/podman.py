@@ -19,7 +19,7 @@ class PodmanError(Exception):
 class PodmanEngine:
     def __init__(self, project_root: Optional[Path] = None, registry_prefix: Optional[str] = None):
         self.project_root = project_root or find_project_root()
-        self.registry_prefix = registry_prefix if registry_prefix is not None else os.environ.get("LINUX_CTF_REGISTRY", "docker.io/paramesh")
+        self.registry_prefix = registry_prefix if registry_prefix is not None else os.environ.get("LINUX_CTF_REGISTRY", "docker.io/paramesh273")
         self.active_sessions: dict[str, SessionSecret] = {}
         self._ensure_podman_installed()
 
@@ -59,48 +59,6 @@ class PodmanEngine:
             subprocess.run(["podman", "tag", remote_tag, room.image_tag], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return True, f"Image {remote_tag} pulled successfully."
         return False, res.stdout + res.stderr
-
-    def build_base_image(self) -> Tuple[bool, str]:
-        """Builds linux-ctf-base:latest from common/Containerfile.base."""
-        containerfile = self.project_root / "common" / "Containerfile.base"
-        if not containerfile.is_file():
-            return False, f"Base containerfile not found at {containerfile}"
-
-        cmd = [
-            "podman",
-            "build",
-            "-t",
-            "linux-ctf-base:latest",
-            "-f",
-            str(containerfile),
-            str(self.project_root),
-        ]
-        res = subprocess.run(cmd, capture_output=True, text=True)
-        return res.returncode == 0, res.stdout + res.stderr
-
-    def build_room_image(self, room: Room) -> Tuple[bool, str]:
-        """Builds the container image for a specific room."""
-        # Ensure base image exists first
-        if not self.is_image_built("linux-ctf-base:latest"):
-            logger.info("Base image not found. Building base image first...")
-            success, msg = self.build_base_image()
-            if not success:
-                return False, f"Failed to build base image: {msg}"
-
-        if not room.containerfile_path.is_file():
-            return False, f"Containerfile missing for room {room.id} at {room.containerfile_path}"
-
-        cmd = [
-            "podman",
-            "build",
-            "-t",
-            room.image_tag,
-            "-f",
-            str(room.containerfile_path),
-            str(self.project_root),
-        ]
-        res = subprocess.run(cmd, capture_output=True, text=True)
-        return res.returncode == 0, res.stdout + res.stderr
 
     def is_container_running(self, container_name: str) -> bool:
         """Checks if a container is currently active."""
@@ -161,7 +119,7 @@ class PodmanEngine:
                 image_tag = room.image_tag
             else:
                 raise PodmanError(
-                    f"Room {room.id} is NOT ready! Please build or pull it first."
+                    f"Room {room.id} is NOT ready! Please pull it first using 'pull {room.id}'."
                 )
 
         # Stop existing instance if lingering
@@ -209,8 +167,8 @@ class PodmanEngine:
                 image_tag = room.image_tag
             else:
                 return False, (
-                    f"Room {room.id} image is not built yet. "
-                    f"Please make it ready first using: build {room.id}"
+                    f"Room {room.id} image is not pulled yet. "
+                    f"Please make it ready first using: pull {room.id}"
                 )
 
         secret = generate_session_secret(room.id)
