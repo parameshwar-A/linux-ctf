@@ -70,8 +70,8 @@
       "which",
       "whereis"
     ],
-    "mission": "A diagnostic binary 'sec-beacon' is installed on the system PATH. Locate its installation path using 'whereis', and pass the full path back to 'sec-beacon <PATH>' to authenticate and receive the flag!",
-    "hint": "Use 'whereis sec-beacon' to find its full binary location. Then run: sec-beacon <DISCOVERED_PATH>"
+    "mission": "A diagnostic binary 'sec-beacon' is installed on the system. It requires its own installation path as an argument to authenticate. Find where this binary is located on the system and provide the location back to it to get the flag.",
+    "hint": "Use manpage -k <keyword> command for keyword based searches, Search the man pages for keywords: locate binary / binary / search path / locate program"
   },
   {
     "id": "07",
