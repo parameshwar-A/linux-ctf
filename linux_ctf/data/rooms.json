@@ -70,8 +70,8 @@
       "which",
       "whereis"
     ],
-    "mission": "A custom diagnostic binary 'sec-beacon' is installed on the system PATH. Your task is to find the location of the file. Normal files we can use find command, but for the installed files or executables path there is another commadn find that from man pages",
-    "hint": "Use manpage -k <keyword> command for keyword based searches, Search the man pages for keywords: full path / executable path"
+    "mission": "A diagnostic binary 'sec-beacon' is installed on the system PATH. Locate its installation path using 'whereis', and pass the full path back to 'sec-beacon <PATH>' to authenticate and receive the flag!",
+    "hint": "Use 'whereis sec-beacon' to find its full binary location. Then run: sec-beacon <DISCOVERED_PATH>"
   },
   {
     "id": "07",
