@@ -93,11 +93,15 @@ Once inside a room session (`python3 -m linux_ctf.cli enter <id>` or pressing `e
 
 1. **Read the Mission**: Review the login MOTD banner for target commands and objective.
 2. **Inspect the Environment**: Use standard commands (e.g. `pwd`, `ls -la`, `cat`, `man`).
-3. **Submit Your Flag**: Once you discover the flag string, run:
+3. **Need a Hint?**: If you need guidance, run:
+   ```bash
+   hint
+   ```
+4. **Submit Your Flag**: Once you discover the flag string, run:
    ```bash
    submit-flag "FLAG{...}"
    ```
-4. **Exit the Room**: Type `exit` or press `Ctrl+D` to return to your host terminal or TUI dashboard.
+5. **Exit the Room**: Type `exit` or press `Ctrl+D` to return to your host terminal or TUI dashboard.
 
 ---
 

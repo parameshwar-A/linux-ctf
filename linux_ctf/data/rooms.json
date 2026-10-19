@@ -8,8 +8,8 @@
       "pwd",
       "ls"
     ],
-    "mission": "Locate the hidden flag (.hidden_flag) concealed in your home directory.",
-    "hint": "Files starting with a '.' are hidden by default. Check 'man ls' to see how to list all files."
+    "mission": "The flag is in a hidden files in your home directory. Find a way to see the hidden file and fetch the flag.",
+    "hint": "Read the man page for ls command like this: man ls. Read it and you will find the answer!"
   },
   {
     "id": "02",
@@ -20,8 +20,8 @@
       "cd",
       "cat"
     ],
-    "mission": "Navigate into 'archives/classified/2026' and read the secret document. Beware of spaces in filenames!",
-    "hint": "Use 'cd' to change into directories. Wrap filenames with spaces in quotes or escape with a backslash: cat 'top secret document.txt'"
+    "mission": "Navigate into 'archives/classified/2026' and read the secret document.",
+    "hint": "Use manpage -k 'keyword' command for keyword based searches, Search for keywords like changing directories/ printing contents / standard output"
   },
   {
     "id": "03",
@@ -33,8 +33,8 @@
       ">",
       ">>"
     ],
-    "mission": "The server launch daemon is awaiting configuration in 'dispatch.conf'. Use 'echo' with redirection ('>' and '>>') to write the required configuration keys. Once completed, execute './verify_dispatch' to reveal your flag!",
-    "hint": "Write 'MODE=ACTIVE' using '>' (overwrites), and 'TARGET=PRODUCTION' using '>>' (appends without overwriting). Check your work with 'cat dispatch.conf'."
+    "mission": "The server launch daemon is awaiting configuration in 'dispatch.conf'. Use a command to write the required configuration keys. Check the instructions file for the configuration keys. Once edited the file, execute './verify_dispatch' to reveal your flag!",
+    "hint": "Check the man page of bash, read it and find if there is anything related to writing output, redirection of data"
   },
   {
     "id": "04",
@@ -46,7 +46,7 @@
       "mv"
     ],
     "mission": "An archive payload was misplaced as 'staging/temp_payload.dat'. Move it to 'production/app_payload.dat', and create a duplicate backup copy at 'backups/app_payload.dat'. Run './check_production' to verify!",
-    "hint": "Use 'mv staging/temp_payload.dat production/app_payload.dat' to move and rename, then 'cp production/app_payload.dat backups/app_payload.dat' to duplicate. Verify with './check_production'."
+    "hint": "Use manpage -k <keyword> command for keyword based searches, Search manpages for keywords like copy files / copy / move files"
   },
   {
     "id": "05",
@@ -58,8 +58,8 @@
       "rm",
       "rmdir"
     ],
-    "mission": "The storage area 'sandbox/clutter' is full of junk. Locate 'sandbox/clutter/secret_key.txt' (which contains the flag), create the directory 'sandbox/secure_vault', and move the key into it. Run './verify_vault' to complete the mission!",
-    "hint": "Use 'mkdir -p sandbox/secure_vault' to create the vault directory, then move 'sandbox/clutter/secret_key.txt' into it. Read the key with 'cat'."
+    "mission": "The storage area 'sandbox/clutter' is full of junk. Locate 'sandbox/clutter/secret_*.txt' (which contains the flag), create the directory 'sandbox/secure_vault', and move the key into it. Run './verify_vault' to complete the mission!",
+    "hint": "Use manpage -k <keyword> command for keyword based searches, Search man pages for keywords like directories / make / remove"
   },
   {
     "id": "06",
@@ -70,8 +70,8 @@
       "which",
       "whereis"
     ],
-    "mission": "A custom diagnostic binary 'sec-beacon' is installed on the system PATH. Locate it using 'which' or 'whereis', and execute it to extract the beacon key!",
-    "hint": "Run 'which sec-beacon' to display its path, then execute it simply by typing 'sec-beacon'."
+    "mission": "A custom diagnostic binary 'sec-beacon' is installed on the system PATH. Your task is to find the location of the file. Normal files we can use find command, but for the installed files or executables path there is another commadn find that from man pages",
+    "hint": "Use manpage -k <keyword> command for keyword based searches, Search the man pages for keywords: full path / executable path"
   },
   {
     "id": "07",
@@ -81,8 +81,8 @@
     "commands": [
       "file"
     ],
-    "mission": "Inspect the files inside 'suspects/'. All files have misleading extensions (.png, .mp3, .pdf, .bin, .tar). Exactly one file is an ASCII text file containing the mission flag. Use 'file' to discover it!",
-    "hint": "Run 'file suspects/*' to analyze file signatures. Identify the ASCII text file and view it with 'cat'."
+    "mission": "Inspect the files inside 'suspects/'. Files inside the suspects have wrong extensions added. All files have misleading extensions (.png, .mp3, .pdf, .bin, .tar). Exactly one file is an ASCII text file containing the mission flag. Find a way to detect the actual type of the file rather than the file extension.",
+    "hint": "Use manpage -k <keyword> command for keyword based searches, Search the man pages for keywords: file type / file / determining file content type"
   },
   {
     "id": "08",
@@ -93,8 +93,8 @@
       "head",
       "tail"
     ],
-    "mission": "The telemetry stream 'sensor_stream.log' contains 1,000 lines of data. The mission flag is recorded precisely at line 500. Use 'head' and 'tail' to extract line 500!",
-    "hint": "Pipe 'head' into 'tail': 'head -n 500 sensor_stream.log | tail -n 1' to isolate the exact line."
+    "mission": "The telemetry stream 'sensor_stream.log' contains 1,000 lines of data. The mission flag is recorded precisely at line 500. Use any commands but we recommend to use 'head' and 'tail' to extract line 500!",
+    "hint": "Feed the output from head back to tail and do some combined processing. Try reading the bash to see if they have any way to link output of one command to another. Use that"
   },
   {
     "id": "09",
@@ -104,8 +104,8 @@
     "commands": [
       "wc"
     ],
-    "mission": "The folder 'transcripts/' holds multiple candidate files. The authentic classified debrief has exactly 42 lines. Use 'wc -l' to find the 42-line file and read the flag!",
-    "hint": "Run 'wc -l transcripts/*' to see the line counts of all files. Find the 42-line file, then inspect it with 'cat'."
+    "mission": "The folder 'transcripts/' holds multiple candidate files. The authentic classified debrief has exactly 42 lines. There is a tool called wc which can do some word and file related checks. Read the man page for that and find the actual file which has 42 lines.",
+    "hint": "Visit man page of 'wc' command, check for available option related to line counts"
   },
   {
     "id": "10",
@@ -116,8 +116,8 @@
       "sort",
       "uniq"
     ],
-    "mission": "The file 'transaction_hashes.txt' contains 200 transaction tokens with duplicates. Exactly one token is unique without any duplicate. Use 'sort' and 'uniq -u' to filter out duplicates and isolate the flag!",
-    "hint": "Sort the file before deduplication: 'sort transaction_hashes.txt | uniq -u'."
+    "mission": "The file 'transaction_hashes.txt' contains 200 transaction tokens with duplicates. Exactly one token is unique without any duplicate. Find a command which helps to identify the duplicates and use that to identify the proper token.",
+    "hint": "Use manpage -k <keyword> command for keyword based searches, Search the man pages for keywords: repeated lines / report  lines / sort"
   },
   {
     "id": "11",
@@ -128,7 +128,7 @@
       "tr"
     ],
     "mission": "An intercepted transmission 'intercepted.enc' was scrambled using a classic ROT13 cipher. Decipher the message using 'tr' to reveal the plaintext flag!",
-    "hint": "Use 'tr' to translate character sets: tr 'A-Za-z' 'N-ZA-Mn-za-m' < intercepted.enc."
+    "hint": "Ensure to read more about ROT13 and then try how can we use the tr command through man tr."
   },
   {
     "id": "12",
@@ -139,7 +139,7 @@
       "grep"
     ],
     "mission": "The 'logs/' directory contains dozens of access logs with thousands of web requests. Find the suspicious entry tagged with error code 'ERR_LEAK_9918' and extract the leaked flag!",
-    "hint": "Use 'grep -rn \"ERR_LEAK_9918\" logs/' to recursively search all log files and display line numbers."
+    "hint": "Find a command which can help us to search through files. Use manpage -k <keyword> command for keyword based searches, Search the man pages for keywords: search for patterns / match pattern / search"
   },
   {
     "id": "13",
@@ -150,7 +150,7 @@
       "find"
     ],
     "mission": "The 'storage/' directory contains deeply nested folders and decoy files. Find the file named 'access.key' that has a file size greater than 50 bytes using 'find' to discover the flag!",
-    "hint": "Run 'find storage/ -name \"access.key\" -size +50c' to search by name and size, then 'cat' the matching file."
+    "hint": "Read more and indepth features of find using man find command."
   },
   {
     "id": "14",
@@ -162,7 +162,7 @@
       "gzip"
     ],
     "mission": "A compressed archive 'classified_vault.tar.gz' has arrived. Decompress and unpack the archive using 'tar' to inspect 'vault_data/credentials.txt' and retrieve the flag!",
-    "hint": "Run 'tar -xzf classified_vault.tar.gz' to decompress and extract the archive contents."
+    "hint": "Read more about tar command using the man tar command. Just read you will figure it out!"
   },
   {
     "id": "15",
@@ -176,6 +176,6 @@
       "uniq"
     ],
     "mission": "Capstone Challenge! Analyze the telemetry file 'network_traffic.csv'. Extract the client IP addresses (column 2), filter by port '443', count occurrences with 'uniq -c', and find the IP with the highest traffic volume. Once identified, run './report_attacker <IP>' to earn the master flag!",
-    "hint": "Build a pipeline: 'grep \",443,\" network_traffic.csv | cut -d\",\" -f2 | sort | uniq -c | sort -nr | head -n 1'. Then execute './report_attacker <IP>'."
+    "hint": "If you came this far, you know what to do! That's right it is in man pages, but this time it won't be a single command, But cocktail of few items so start hacking!"
   }
 ]

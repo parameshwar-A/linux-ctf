@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import argparse
+from pathlib import Path
 import sys
+
+# Support running directly: `python linux_ctf/cli.py` or `./linux_ctf/cli.py`
+_project_root = Path(__file__).resolve().parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
+
 from linux_ctf.engine.rooms import RoomRegistry
 from linux_ctf.engine.podman import PodmanEngine, PodmanError
 
@@ -197,8 +204,12 @@ def main() -> int:
     sub_stop = subparsers.add_parser("stop", help="Stop a running room container")
     sub_stop.add_argument("room_id", help="Room identifier (e.g. 01, level01)")
 
-    # clean-room (and alias clean-image)
-    sub_clean = subparsers.add_parser("clean-room", aliases=["clean-image"], help="Stop and remove container and image for a room")
+    # clean-room (and aliases clean-image, clean-all, clean)
+    sub_clean = subparsers.add_parser(
+        "clean-room",
+        aliases=["clean-image", "clean-all", "clean"],
+        help="Stop and remove container and image for a room (or use clean-all / --all)",
+    )
     sub_clean.add_argument("room_id", nargs="?", default=None, help="Room identifier (e.g. 01, level01)")
     sub_clean.add_argument("--all", action="store_true", help="Clean all built rooms")
 
@@ -239,7 +250,9 @@ def main() -> int:
         return cmd_enter(registry, engine, args)
     elif args.command == "stop":
         return cmd_stop(registry, engine, args)
-    elif args.command in ("clean-room", "clean-image"):
+    elif args.command in ("clean-room", "clean-image", "clean-all", "clean"):
+        if args.command in ("clean-all", "clean") and not args.room_id:
+            setattr(args, "all", True)
         return cmd_clean_room(registry, engine, args)
     elif args.command == "verify":
         return cmd_verify(registry, engine, args)
