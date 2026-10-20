@@ -21,7 +21,7 @@
       "cat"
     ],
     "mission": "Navigate into 'archives/classified/2026' and read the secret document.",
-    "hint": "Use manpage -k 'keyword' command for keyword based searches, Search for keywords like changing directories/ printing contents / standard output"
+    "hint": "Use 'man -k <keyword>' for keyword based searches. Search for keywords like changing directories / printing contents / standard output"
   },
   {
     "id": "03",
@@ -46,7 +46,7 @@
       "mv"
     ],
     "mission": "An archive payload was misplaced as 'staging/temp_payload.dat'. Move it to 'production/app_payload.dat', and create a duplicate backup copy at 'backups/app_payload.dat'. Run './check_production' to verify!",
-    "hint": "Use manpage -k <keyword> command for keyword based searches, Search manpages for keywords like copy files / copy / move files"
+    "hint": "Use 'man -k <keyword>' for keyword based searches. Search man pages for keywords like copy files / copy / move files"
   },
   {
     "id": "05",
@@ -59,7 +59,7 @@
       "rmdir"
     ],
     "mission": "The storage area 'sandbox/clutter' is full of junk. Locate 'sandbox/clutter/secret_*.txt' (which contains the flag), create the directory 'sandbox/secure_vault', and move the key into it. Run './verify_vault' to complete the mission!",
-    "hint": "Use manpage -k <keyword> command for keyword based searches, Search man pages for keywords like directories / make / remove"
+    "hint": "Use 'man -k <keyword>' for keyword based searches. Search man pages for keywords like directories / make / remove"
   },
   {
     "id": "06",
@@ -71,7 +71,7 @@
       "whereis"
     ],
     "mission": "A diagnostic binary 'sec-beacon' is installed on the system. It requires its own installation path as an argument to authenticate. Find where this binary is located on the system and provide the location back to it to get the flag.",
-    "hint": "Use manpage -k <keyword> command for keyword based searches, Search the man pages for keywords: locate binary / binary / search path / locate program"
+    "hint": "Use 'man -k <keyword>' for keyword based searches. Search the man pages for keywords like: locate binary / binary / search path / locate program"
   },
   {
     "id": "07",
@@ -82,7 +82,7 @@
       "file"
     ],
     "mission": "Inspect the files inside 'suspects/'. Files inside the suspects have wrong extensions added. All files have misleading extensions (.png, .mp3, .pdf, .bin, .tar). Exactly one file is an ASCII text file containing the mission flag. Find a way to detect the actual type of the file rather than the file extension.",
-    "hint": "Use manpage -k <keyword> command for keyword based searches, Search the man pages for keywords: file type / file / determining file content type"
+    "hint": "Use 'man -k <keyword>' for keyword based searches. Search the man pages for keywords like: file type / file / determining file content type"
   },
   {
     "id": "08",
@@ -117,7 +117,7 @@
       "uniq"
     ],
     "mission": "The file 'transaction_hashes.txt' contains 200 transaction tokens with duplicates. Exactly one token is unique without any duplicate. Find a command which helps to identify the duplicates and use that to identify the proper token.",
-    "hint": "Use manpage -k <keyword> command for keyword based searches, Search the man pages for keywords: repeated lines / report  lines / sort"
+    "hint": "Use 'man -k <keyword>' for keyword based searches. Search the man pages for keywords like: repeated lines / report lines / sort"
   },
   {
     "id": "11",
@@ -139,7 +139,7 @@
       "grep"
     ],
     "mission": "The 'logs/' directory contains dozens of access logs with thousands of web requests. Find the suspicious entry tagged with error code 'ERR_LEAK_9918' and extract the leaked flag!",
-    "hint": "Find a command which can help us to search through files. Use manpage -k <keyword> command for keyword based searches, Search the man pages for keywords: search for patterns / match pattern / search"
+    "hint": "Find a command which can help us to search through files. Use 'man -k <keyword>' for keyword based searches. Search the man pages for keywords like: search for patterns / match pattern / search"
   },
   {
     "id": "13",

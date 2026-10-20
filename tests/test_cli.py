@@ -32,7 +32,7 @@ class TestLinuxCTFCLI(unittest.TestCase):
             output = fake_out.getvalue()
             self.assertEqual(code, 0)
             self.assertIn("ROOM 01", output)
-            self.assertIn("Commands:", output)
+            self.assertIn("Mission:", output)
 
         # Non-existent room
         args_bad = argparse.Namespace(room_id="999")
@@ -42,12 +42,15 @@ class TestLinuxCTFCLI(unittest.TestCase):
             self.assertEqual(code, 1)
             self.assertIn("not found", output)
 
-    def test_cli_verify(self):
+    @patch.object(PodmanEngine, "is_image_ready", return_value=True)
+    @patch.object(PodmanEngine, "test_flag_against_container")
+    def test_cli_verify(self, mock_test, mock_ready):
         r1 = self.registry.get_room("01")
         secret = generate_session_secret(r1.id)
         self.engine.active_sessions[r1.id] = secret
 
         # Test valid flag
+        mock_test.return_value = (True, "[+] SUCCESS! FLAG ACCEPTED!")
         args_good = argparse.Namespace(room_id="01", flag=secret.flag)
         with patch("sys.stdout", new=StringIO()) as fake_out:
             code = cmd_verify(self.registry, self.engine, args_good)
@@ -56,6 +59,7 @@ class TestLinuxCTFCLI(unittest.TestCase):
             self.assertIn("ACCEPTED", output)
 
         # Test invalid flag
+        mock_test.return_value = (False, "[-] INCORRECT FLAG! Keep exploring...")
         args_bad = argparse.Namespace(room_id="01", flag="FLAG{invalid_flag}")
         with patch("sys.stdout", new=StringIO()) as fake_out:
             code = cmd_verify(self.registry, self.engine, args_bad)

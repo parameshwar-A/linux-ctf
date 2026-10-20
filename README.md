@@ -8,9 +8,9 @@ Linux CTF is an interactive, gamified command-line learning platform designed to
 
 * **Rootless Podman Sandboxes**: Every room executes inside a self-contained, unprivileged rootless container. Ephemeral containers spin up instantly on entry and cleanly tear down on exit.
 * **Hardened In-Container Verification**: Flags are validated inside each container via a compiled, stripped C binary (`/usr/local/bin/submit-flag`) using compile-time salted SHA-256 hashes. Plaintext flags are never stored in container filesystems or visible via `strings`.
-* **Terminal User Interface (TUI)**: A modern Textual-based terminal dashboard featuring live room status tracking, mission briefings, target command chips, toggleable hints, in-app flag submission, and seamless one-key terminal handoff into containers.
+* **Terminal User Interface (TUI)**: A modern Textual-based terminal dashboard featuring live room status tracking, mission briefings, toggleable hints, in-app flag submission, and seamless one-key terminal handoff into containers.
 * **Full-Featured CLI**: Complete scriptable command-line interface for listing rooms, building images, entering sessions, testing flags, and cleaning images.
-* **Built-in MOTD & Manual Integration**: Each container launches with an informative welcome banner summarizing the room objective and commands, along with fully indexed manual pages (`man`) for reference.
+* **Built-in MOTD & Manual Integration**: Each container launches with an informative welcome banner summarizing the room objective and mission, along with fully indexed manual pages (`man`) for reference.
 * **Zero Icon Dependency**: Terminal output and TUI widgets are styled using clean ASCII indicators and rich ANSI colors, ensuring compatibility across all terminal emulators and fonts without broken glyphs.
 
 ---
@@ -63,7 +63,7 @@ Linux CTF provides a headless CLI via `linux_ctf.cli`:
 # List all available rooms and their current pull/running status
 python3 -m linux_ctf.cli list
 
-# Show detailed room briefing, tier, and target commands
+# Show detailed room briefing, tier, and mission
 python3 -m linux_ctf.cli show 01
 
 # Pull the pre-built container image for a room from Docker Hub
@@ -91,7 +91,7 @@ python3 -m linux_ctf.cli clean-room --all
 
 Once inside a room session (`python3 -m linux_ctf.cli enter <id>` or pressing `e` in the TUI):
 
-1. **Read the Mission**: Review the login MOTD banner for target commands and objective.
+1. **Read the Mission**: Review the login MOTD banner for the room objective and mission.
 2. **Inspect the Environment**: Use standard commands (e.g. `pwd`, `ls -la`, `cat`, `man`).
 3. **Need a Hint?**: If you need guidance, run:
    ```bash

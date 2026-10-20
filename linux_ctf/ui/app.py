@@ -94,9 +94,6 @@ class LinuxCTFApp(App):
                     yield Button("Show Hint", id="btn-hint")
                     yield Button("Submit", id="btn-submit")
 
-                with Vertical(classes="info-card"):
-                    yield Label("TARGET COMMANDS", classes="card-title")
-                    yield Label("", id="commands-chips")
 
                 with Vertical(classes="info-card"):
                     yield Label("MISSION BRIEFING", classes="card-title")
@@ -169,10 +166,6 @@ class LinuxCTFApp(App):
         self.query_one("#room-meta", Label).update(
             f"Tier: [white]{room.tier}[/white]  |  Image: [dim]{self.engine.get_image_tag(room)}[/dim]  |  Status: {status_desc}"
         )
-
-        # Update Commands Chips (Use rich pill badges)
-        chips = "  ".join([f"[bold black on yellow]  {cmd}  [/bold black on yellow]" for cmd in room.commands])
-        self.query_one("#commands-chips", Label).update(chips)
 
         # Update Mission Text
         self.query_one("#mission-text", Static).update(

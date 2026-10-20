@@ -177,12 +177,6 @@ RoomListItem Horizontal {
     margin-bottom: 0;
 }
 
-#commands-chips {
-    color: #ffa657;
-    text-style: bold;
-    height: auto;
-    margin-top: 1;
-}
 
 #mission-text {
     color: #f0f6fc;

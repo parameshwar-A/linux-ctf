@@ -29,8 +29,8 @@ def cmd_list(registry: RoomRegistry, engine: PodmanEngine, args: argparse.Namesp
         return 0
 
     print(f"\n{C_CYAN}{C_BOLD}=== LINUX CTF - AVAILABLE ROOMS ==={C_RESET}")
-    print(f"{'ID':<4} {'ROOM TITLE':<25} {'TIER':<10} {'STATUS':<12} {'COMMANDS'}")
-    print("-" * 75)
+    print(f"{'ID':<4} {'ROOM TITLE':<25} {'TIER':<10} {'STATUS'}")
+    print("-" * 55)
 
     for room in rooms:
         is_ready = engine.is_image_ready(room)
@@ -43,10 +43,9 @@ def cmd_list(registry: RoomRegistry, engine: PodmanEngine, args: argparse.Namesp
         else:
             status = f"{C_GRAY}NOT PULLED{C_RESET}"
 
-        cmds = ", ".join(room.commands)
-        print(f"{room.id:<4} {room.title:<25} {room.tier:<10} {status:<21} {cmds}")
+        print(f"{room.id:<4} {room.title:<25} {room.tier:<10} {status}")
 
-    print("-" * 75)
+    print("-" * 55)
     print(f"Total Rooms: {len(rooms)}\n")
     return 0
 
@@ -64,7 +63,6 @@ def cmd_show(registry: RoomRegistry, engine: PodmanEngine, args: argparse.Namesp
     print(f"  {C_BOLD}[ ROOM {room.id} ]: {room.title.upper()}{C_RESET}")
     print(f"{C_CYAN}======================================================================{C_RESET}")
     print(f"  {C_YELLOW}Tier:{C_RESET}       {room.tier}")
-    print(f"  {C_YELLOW}Commands:{C_RESET}   {', '.join(room.commands)}")
     print(f"  {C_YELLOW}Container:{C_RESET}  {engine.get_image_tag(room)} ({'Ready' if is_ready else 'Not pulled'})")
     print(f"  {C_YELLOW}Active:{C_RESET}     {'Yes' if is_running else 'No'}")
     print(f"  {C_YELLOW}Mission:{C_RESET}    {room.mission}")
