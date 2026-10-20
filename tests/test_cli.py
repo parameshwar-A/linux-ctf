@@ -3,6 +3,9 @@ import argparse
 from io import StringIO
 import sys
 from unittest.mock import patch
+import os
+import tempfile
+from pathlib import Path
 from linux_ctf.engine.rooms import RoomRegistry
 from linux_ctf.engine.podman import PodmanEngine
 from linux_ctf.engine.secrets import generate_session_secret
@@ -11,8 +14,16 @@ from linux_ctf.cli import cmd_list, cmd_show, cmd_verify
 
 class TestLinuxCTFCLI(unittest.TestCase):
     def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.progress_file = Path(self.temp_dir.name) / "progress.json"
+        self.env_patch = patch.dict(os.environ, {"LINUX_CTF_PROGRESS_FILE": str(self.progress_file)})
+        self.env_patch.start()
         self.registry = RoomRegistry()
         self.engine = PodmanEngine()
+
+    def tearDown(self):
+        self.env_patch.stop()
+        self.temp_dir.cleanup()
 
     def test_cli_list(self):
         args = argparse.Namespace()

@@ -11,6 +11,7 @@ if str(_project_root) not in sys.path:
 
 from linux_ctf.engine.rooms import RoomRegistry
 from linux_ctf.engine.podman import PodmanEngine, PodmanError
+from linux_ctf.engine.progress import ProgressTracker
 
 # ANSI Colors
 C_RESET = "\033[0m"
@@ -28,13 +29,15 @@ def cmd_list(registry: RoomRegistry, engine: PodmanEngine, args: argparse.Namesp
         print(f"{C_YELLOW}[!] No rooms found in rooms/ directory.{C_RESET}")
         return 0
 
+    tracker = ProgressTracker()
     print(f"\n{C_CYAN}{C_BOLD}=== LINUX CTF - AVAILABLE ROOMS ==={C_RESET}")
-    print(f"{'ID':<4} {'ROOM TITLE':<25} {'TIER':<10} {'STATUS'}")
-    print("-" * 55)
+    print(f"{'ID':<4} {'ROOM TITLE':<25} {'TIER':<10} {'STATUS':<14} {'PROGRESS'}")
+    print("-" * 68)
 
     for room in rooms:
         is_ready = engine.is_image_ready(room)
         is_running = engine.is_container_running(room.container_name)
+        is_done = tracker.is_completed(room.id)
 
         if is_running:
             status = f"{C_GREEN}RUNNING{C_RESET}"
@@ -43,10 +46,16 @@ def cmd_list(registry: RoomRegistry, engine: PodmanEngine, args: argparse.Namesp
         else:
             status = f"{C_GRAY}NOT PULLED{C_RESET}"
 
-        print(f"{room.id:<4} {room.title:<25} {room.tier:<10} {status}")
+        if is_done:
+            progress_str = f"{C_GREEN}COMPLETED{C_RESET}"
+        else:
+            progress_str = f"{C_GRAY}PENDING{C_RESET}"
 
-    print("-" * 55)
-    print(f"Total Rooms: {len(rooms)}\n")
+        print(f"{room.id:<4} {room.title:<25} {room.tier:<10} {status:<23} {progress_str}")
+
+    print("-" * 68)
+    stats = tracker.get_summary(len(rooms))
+    print(f"Total Rooms: {len(rooms)} | Completed: {stats['completed']}/{stats['total']} ({stats['percent']}%)\n")
     return 0
 
 
@@ -59,10 +68,15 @@ def cmd_show(registry: RoomRegistry, engine: PodmanEngine, args: argparse.Namesp
     is_ready = engine.is_image_ready(room)
     is_running = engine.is_container_running(room.container_name)
 
+    tracker = ProgressTracker()
+    is_done = tracker.is_completed(room.id)
+    progress_desc = f"{C_GREEN}COMPLETED (Replayable){C_RESET}" if is_done else f"{C_YELLOW}PENDING (Not Solved){C_RESET}"
+
     print(f"\n{C_CYAN}{C_BOLD}======================================================================{C_RESET}")
     print(f"  {C_BOLD}[ ROOM {room.id} ]: {room.title.upper()}{C_RESET}")
     print(f"{C_CYAN}======================================================================{C_RESET}")
     print(f"  {C_YELLOW}Tier:{C_RESET}       {room.tier}")
+    print(f"  {C_YELLOW}Progress:{C_RESET}   {progress_desc}")
     print(f"  {C_YELLOW}Container:{C_RESET}  {engine.get_image_tag(room)} ({'Ready' if is_ready else 'Not pulled'})")
     print(f"  {C_YELLOW}Active:{C_RESET}     {'Yes' if is_running else 'No'}")
     print(f"  {C_YELLOW}Mission:{C_RESET}    {room.mission}")
@@ -145,11 +159,11 @@ def cmd_clean_room(registry: RoomRegistry, engine: PodmanEngine, args: argparse.
         print(f"{C_RED}[-] Room '{args.room_id}' not found.{C_RESET}")
         return 1
 
-    if not engine.is_image_built(room.image_tag) and not engine.is_container_running(room.container_name):
+    if not engine.is_image_ready(room) and not engine.is_container_running(room.container_name):
         print(f"{C_YELLOW}[*] Room {room.id} is already clean (no container or image found).{C_RESET}")
         return 0
 
-    print(f"{C_YELLOW}[*] Cleaning Room {room.id} (stopping active container and removing {room.image_tag})...{C_RESET}")
+    print(f"{C_YELLOW}[*] Cleaning Room {room.id} (stopping active container and removing all local & pulled images)...{C_RESET}")
     success, output = engine.clean_room(room)
     if success:
         print(f"{C_GREEN}[+] Room {room.id} cleaned successfully.{C_RESET}")
@@ -173,7 +187,26 @@ def cmd_verify(registry: RoomRegistry, engine: PodmanEngine, args: argparse.Name
     print(f"{C_YELLOW}[*] Testing flag against Room {room.id}...{C_RESET}")
     success, output = engine.test_flag_against_container(room, args.flag)
     print(output)
+    if success:
+        tracker = ProgressTracker()
+        tracker.mark_completed(room.id, room.title)
+        print(f"\n{C_GREEN}[+] Progress Recorded: Room {room.id} marked as COMPLETED!{C_RESET}\n")
     return 0 if success else 1
+
+
+def cmd_reset_progress(registry: RoomRegistry, args: argparse.Namespace) -> int:
+    tracker = ProgressTracker()
+    if getattr(args, "room_id", None):
+        room = registry.get_room(args.room_id)
+        if not room:
+            print(f"{C_RED}[-] Room '{args.room_id}' not found.{C_RESET}")
+            return 1
+        tracker.reset_room(room.id)
+        print(f"{C_GREEN}[+] Progress reset for Room {room.id} ({room.title}).{C_RESET}")
+    else:
+        tracker.reset_all()
+        print(f"{C_GREEN}[+] All progress records have been reset to 0.{C_RESET}")
+    return 0
 
 
 def main() -> int:
@@ -216,6 +249,10 @@ def main() -> int:
     sub_verify.add_argument("room_id", help="Room identifier (e.g. 01, level01)")
     sub_verify.add_argument("flag", help="Flag string to test (e.g. FLAG{...})")
 
+    # reset-progress
+    sub_reset = subparsers.add_parser("reset-progress", help="Reset local CTF progress (all or specific room)")
+    sub_reset.add_argument("room_id", nargs="?", default=None, help="Optional room ID to reset (e.g. 01)")
+
     # tui
     sub_tui = subparsers.add_parser("tui", help="Launch the interactive Terminal User Interface (TUI)")
 
@@ -254,6 +291,8 @@ def main() -> int:
         return cmd_clean_room(registry, engine, args)
     elif args.command == "verify":
         return cmd_verify(registry, engine, args)
+    elif args.command == "reset-progress":
+        return cmd_reset_progress(registry, args)
 
     return 0
 

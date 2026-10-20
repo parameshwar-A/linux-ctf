@@ -5,32 +5,51 @@ from textual import work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Horizontal, Vertical, Grid
-from textual.widgets import Button, Footer, Header, Label, ListItem, ListView, Static
+from textual.widgets import Button, Footer, Header, Label, ListItem, ListView, ProgressBar, Static
 
 from linux_ctf.models import Room
 from linux_ctf.engine.rooms import RoomRegistry
 from linux_ctf.engine.podman import PodmanEngine, PodmanError
+from linux_ctf.engine.progress import ProgressTracker
 from linux_ctf.ui.screens.submit_modal import SubmitModal
 from linux_ctf.ui.screens.confirm_modal import ConfirmCleanModal
 
 
 class RoomListItem(ListItem):
-    """Custom list item representing a challenge room."""
+    """Custom list item representing a challenge room with completion and readiness badges."""
 
-    def __init__(self, room: Room, status_text: str, badge_class: str) -> None:
+    def __init__(self, room: Room, is_done: bool, is_ready: bool, is_running: bool) -> None:
         super().__init__()
         self.room = room
-        self.status_text = status_text
-        self.badge_class = badge_class
+        self.is_done = is_done
+        self.is_ready = is_ready
+        self.container_running = is_running
 
     def compose(self) -> ComposeResult:
-        with Horizontal():
-            yield Label(f"[{self.room.id}] {self.room.title}", classes="room-label")
-            yield Label(f" {self.status_text}", classes=self.badge_class)
+        if self.container_running:
+            container_status = "[RUNNING]"
+            container_badge = "badge-running"
+        elif self.is_ready:
+            container_status = "[READY]"
+            container_badge = "badge-ready"
+        else:
+            container_status = "[NOT PULLED]"
+            container_badge = "badge-unbuilt"
+
+        if self.is_done:
+            title_text = f"[{self.room.id}] [SOLVED] {self.room.title}"
+            title_class = "room-title-solved"
+        else:
+            title_text = f"[{self.room.id}] {self.room.title}"
+            title_class = "room-title-pending"
+
+        with Vertical(classes="room-item-box"):
+            yield Label(title_text, classes=f"room-label {title_class}")
+            yield Label(f"  {container_status}", classes=f"room-badge {container_badge}")
 
 
 class LinuxCTFApp(App):
-    """Modern Terminal User Interface for Linux CTF."""
+    """Modern Terminal User Interface for Linux CTF with Live Progress and Completion Tracking."""
 
     CSS_PATH = "styles.tcss"
     TITLE = "LINUX CTF :: Activity-Based Linux Command Mastery"
@@ -51,6 +70,7 @@ class LinuxCTFApp(App):
         super().__init__()
         self.registry = RoomRegistry()
         self.engine = PodmanEngine()
+        self.tracker = ProgressTracker()
         self.rooms: List[Room] = self.registry.list_rooms()
         self.selected_room: Optional[Room] = self.rooms[0] if self.rooms else None
         self.hint_revealed: bool = False
@@ -58,18 +78,8 @@ class LinuxCTFApp(App):
     def _create_room_item(self, room: Room) -> RoomListItem:
         is_ready = self.engine.is_image_ready(room)
         is_running = self.engine.is_container_running(room.container_name)
-
-        if is_running:
-            status = "[RUNNING]"
-            badge = "badge-running"
-        elif is_ready:
-            status = "[READY]"
-            badge = "badge-ready"
-        else:
-            status = "[NOT PULLED]"
-            badge = "badge-unbuilt"
-
-        return RoomListItem(room, status, badge)
+        is_done = self.tracker.is_completed(room.id)
+        return RoomListItem(room, is_done=is_done, is_ready=is_ready, is_running=is_running)
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True, icon="")
@@ -77,6 +87,9 @@ class LinuxCTFApp(App):
             # Left Sidebar
             with Vertical(id="sidebar"):
                 yield Label("CHALLENGE ROOMS", id="sidebar-title")
+                yield Label("Solved: 0/15 (0%)", id="sidebar-stats-label")
+                total_rooms = max(len(self.rooms), 1)
+                yield ProgressBar(total=total_rooms, show_eta=False, id="sidebar-progress-bar")
                 items = [self._create_room_item(r) for r in self.rooms]
                 yield ListView(*items, id="rooms-list")
 
@@ -94,6 +107,10 @@ class LinuxCTFApp(App):
                     yield Button("Show Hint", id="btn-hint")
                     yield Button("Submit", id="btn-submit")
 
+                # Dedicated Pull Progress Status Box (visible during active image pull)
+                with Vertical(id="pull-progress-box"):
+                    yield Label("Pulling container image...", id="pull-status-label")
+                    yield ProgressBar(total=100, show_eta=False, id="pull-progress-bar")
 
                 with Vertical(classes="info-card"):
                     yield Label("MISSION BRIEFING", classes="card-title")
@@ -145,27 +162,64 @@ class LinuxCTFApp(App):
         self.update_content_view()
 
     def update_content_view(self) -> None:
+        # Update overall stats in sidebar
+        total_count = len(self.rooms)
+        stats = self.tracker.get_summary(total_count)
+        try:
+            stats_label = self.query_one("#sidebar-stats-label", Label)
+            stats_label.update(
+                f"Solved: [bold green]{stats['completed']}/{stats['total']}[/bold green] ([cyan]{stats['percent']}%[/cyan])"
+            )
+            prog_bar = self.query_one("#sidebar-progress-bar", ProgressBar)
+            prog_bar.update(progress=stats["completed"])
+        except Exception:
+            pass
+
         if not self.selected_room:
             return
 
         room = self.selected_room
         is_ready = self.engine.is_image_ready(room)
         is_running = self.engine.is_container_running(room.container_name)
+        is_done = self.tracker.is_completed(room.id)
 
+        # Clear, instant intimation of status without requiring clicks
         if is_running:
-            status_desc = "[bold cyan][RUNNING][/bold cyan] Active"
+            img_badge = "[bold cyan][RUNNING][/bold cyan]"
+            status_desc = "[bold cyan]Active Container Session[/bold cyan]"
         elif is_ready:
-            status_desc = "[bold green][READY][/bold green] Ready to enter"
+            img_badge = "[bold green][IMAGE READY][/bold green]"
+            status_desc = "[bold green]Ready To Play (Cached Locally)[/bold green]"
         else:
-            status_desc = "[bold yellow][NOT PULLED][/bold yellow] Click [Pull] or press 'p'"
+            img_badge = "[bold yellow][NEEDS PULL][/bold yellow]"
+            status_desc = "[bold yellow]Not Downloaded (Click 'Pull' or press 'p')[/bold yellow]"
+
+        comp_badge = "[bold green][COMPLETED][/bold green]" if is_done else "[dim][NOT SOLVED][/dim]"
 
         # Update Header
         self.query_one("#room-title", Label).update(
-            f"[bold cyan]ROOM {room.id} : {room.title.upper()}[/bold cyan]"
+            f"[bold cyan]ROOM {room.id} : {room.title.upper()}[/bold cyan]  {img_badge}  {comp_badge}"
         )
         self.query_one("#room-meta", Label).update(
             f"Tier: [white]{room.tier}[/white]  |  Image: [dim]{self.engine.get_image_tag(room)}[/dim]  |  Status: {status_desc}"
         )
+
+        # Update Button cues
+        try:
+            btn_enter = self.query_one("#btn-enter", Button)
+            btn_pull = self.query_one("#btn-pull", Button)
+            if is_ready:
+                btn_enter.label = "Enter Lab"
+                btn_enter.set_class(True, "ready-btn")
+                btn_pull.label = "Re-pull"
+                btn_pull.set_class(False, "needed-btn")
+            else:
+                btn_enter.label = "Enter"
+                btn_enter.set_class(False, "ready-btn")
+                btn_pull.label = "Pull Image"
+                btn_pull.set_class(True, "needed-btn")
+        except Exception:
+            pass
 
         # Update Mission Text
         self.query_one("#mission-text", Static).update(
@@ -195,6 +249,7 @@ class LinuxCTFApp(App):
         self.update_content_view()
 
     def action_refresh_all(self) -> None:
+        self.engine.refresh_cache()
         self.refresh_room_list()
         self.update_content_view()
         self.notify("Refreshed all room statuses.", title="Linux CTF")
@@ -206,28 +261,53 @@ class LinuxCTFApp(App):
 
         room = self.selected_room
         remote_tag = self.engine.get_image_tag(room)
-        self.notify(
-            f"Pulling {remote_tag} from Docker Hub...",
-            title=f"Pulling Room {room.id}",
-            severity="information",
-            timeout=8,
-        )
 
-        success, msg = self.engine.pull_room_image(room)
-        if success:
-            self.notify(
-                f"Room {room.id} ({room.title}) is pulled and READY!",
-                title="Pull Success",
-                severity="information",
-            )
-        else:
-            self.notify(
-                f"Pull failed for Room {room.id}:\n{msg[:150]}",
-                title="Pull Error",
-                severity="error",
-                timeout=10,
-            )
+        # Show the progress box and update button label
+        def show_progress_start() -> None:
+            try:
+                box = self.query_one("#pull-progress-box", Vertical)
+                box.set_class(True, "active")
+                label = self.query_one("#pull-status-label", Label)
+                label.update(f"[*] Starting download of {remote_tag} from Docker Hub...")
+                bar = self.query_one("#pull-progress-bar", ProgressBar)
+                bar.update(progress=5)
+                btn = self.query_one("#btn-pull", Button)
+                btn.disabled = True
+                btn.label = "Pulling..."
+            except Exception:
+                pass
 
+        self.app.call_from_thread(show_progress_start)
+
+        def on_stream_progress(msg: str, pct: float) -> None:
+            def update_ui() -> None:
+                try:
+                    label = self.query_one("#pull-status-label", Label)
+                    label.update(f"[*] {msg[:75]}")
+                    bar = self.query_one("#pull-progress-bar", ProgressBar)
+                    bar.update(progress=pct)
+                except Exception:
+                    pass
+            self.app.call_from_thread(update_ui)
+
+        success, msg = self.engine.pull_room_image(room, progress_callback=on_stream_progress)
+
+        def show_progress_end() -> None:
+            try:
+                btn = self.query_one("#btn-pull", Button)
+                btn.disabled = False
+                btn.label = "Re-pull"
+                label = self.query_one("#pull-status-label", Label)
+                bar = self.query_one("#pull-progress-bar", ProgressBar)
+                if success:
+                    label.update(f"[bold green][+] Image {remote_tag} is READY! Click 'Enter Lab' (or 'e') to begin.[/bold green]")
+                    bar.update(progress=100)
+                else:
+                    label.update(f"[bold red][-] Pull failed: {msg[:70]}[/bold red]")
+            except Exception:
+                pass
+
+        self.app.call_from_thread(show_progress_end)
         self.app.call_from_thread(self.action_refresh_all)
 
     action_build_room = action_pull_room
@@ -241,7 +321,7 @@ class LinuxCTFApp(App):
         # Strict check: Block entering if not ready/pulled
         if not self.engine.is_image_ready(room):
             self.notify(
-                f"Room {room.id} is NOT READY!\nPlease pull it first using the [Pull] button (or 'p').",
+                f"Room {room.id} is NOT READY!\nPlease pull it first using the [Pull Image] button (or 'p').",
                 title="Room Not Ready",
                 severity="warning",
                 timeout=6,
@@ -289,7 +369,19 @@ class LinuxCTFApp(App):
         if not self.selected_room:
             return
 
-        self.push_screen(SubmitModal(self.selected_room, self.engine))
+        room = self.selected_room
+
+        def handle_submit(solved: bool) -> None:
+            self.refresh_room_list()
+            self.update_content_view()
+            if solved:
+                self.notify(
+                    f"Room {room.id} ({room.title}) marked as COMPLETED!",
+                    title="Room Solved",
+                    severity="information",
+                )
+
+        self.push_screen(SubmitModal(room, self.engine, self.tracker), handle_submit)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         button_id = event.button.id

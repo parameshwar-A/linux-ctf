@@ -87,7 +87,7 @@ python3 -m linux_ctf.cli clean-room --all
 
 ---
 
-## Inside the Challenge Container
+## Inside the Challenge Container & Flag Submission
 
 Once inside a room session (`python3 -m linux_ctf.cli enter <id>` or pressing `e` in the TUI):
 
@@ -97,11 +97,23 @@ Once inside a room session (`python3 -m linux_ctf.cli enter <id>` or pressing `e
    ```bash
    hint
    ```
-4. **Submit Your Flag**: Once you discover the flag string, run:
+4. **Check Your Flag Inside Container (Optional Validation)**:
+   Once you discover the flag string, you can verify its correctness directly inside the machine:
    ```bash
    submit-flag "FLAG{...}"
    ```
-5. **Exit the Room**: Type `exit` or press `Ctrl+D` to return to your host terminal or TUI dashboard.
+   > [!NOTE]
+   > Running `submit-flag` inside the container checks whether your flag is correct, but **it will not add the level as completed in your tracker**. The challenge container runs in an isolated sandbox.
+
+5. **Submit in App to Record Progress**:
+   To record your completion and increase your progress count:
+   - Type `exit` or press `Ctrl+D` to return to your host terminal or TUI dashboard.
+   - **In the TUI**: Press `s` (or click **[Submit]**), paste your flag, and press Enter. The room will immediately update to **[COMPLETED]** and your progress bar/stats will advance!
+   - **In the CLI**: Run:
+     ```bash
+     python3 -m linux_ctf.cli verify <room_id> "FLAG{...}"
+     ```
+   - **Submitting the flag in the App is what officially registers and counts your progress.**
 
 ---
 

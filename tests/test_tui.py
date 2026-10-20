@@ -1,4 +1,8 @@
 import unittest
+import os
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
 from textual.pilot import Pilot
 from linux_ctf.ui.app import LinuxCTFApp
 from linux_ctf.ui.screens.submit_modal import SubmitModal
@@ -6,6 +10,16 @@ from linux_ctf.ui.screens.confirm_modal import ConfirmCleanModal
 
 
 class TestLinuxCTFTUI(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.progress_file = Path(self.temp_dir.name) / "progress.json"
+        self.env_patch = patch.dict(os.environ, {"LINUX_CTF_PROGRESS_FILE": str(self.progress_file)})
+        self.env_patch.start()
+
+    def tearDown(self):
+        self.env_patch.stop()
+        self.temp_dir.cleanup()
+
     async def test_tui_app_lifecycle(self):
         app = LinuxCTFApp()
         async with app.run_test() as pilot:

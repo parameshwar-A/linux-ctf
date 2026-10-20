@@ -5,15 +5,18 @@ from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Label, Static
 from linux_ctf.models import Room
 from linux_ctf.engine.podman import PodmanEngine
+from linux_ctf.engine.progress import ProgressTracker
 
 
 class SubmitModal(ModalScreen[bool]):
     """Modal dialog for testing and submitting a flag."""
 
-    def __init__(self, room: Room, engine: PodmanEngine) -> None:
+    def __init__(self, room: Room, engine: PodmanEngine, tracker: Optional[ProgressTracker] = None) -> None:
         super().__init__()
         self.room = room
         self.engine = engine
+        self.tracker = tracker or ProgressTracker()
+        self.is_solved: bool = False
 
     def compose(self) -> ComposeResult:
         with Container(id="modal-dialog"):
@@ -30,7 +33,7 @@ class SubmitModal(ModalScreen[bool]):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "btn-modal-close":
-            self.dismiss(False)
+            self.dismiss(self.is_solved)
         elif event.button.id == "btn-modal-submit":
             self.submit_flag()
 
@@ -59,9 +62,17 @@ class SubmitModal(ModalScreen[bool]):
         # Test flag non-interactively
         success, msg = self.engine.test_flag_against_container(self.room, val)
         if success:
-            feedback.update("[+] [SUCCESS] FLAG ACCEPTED! Room Completed!")
+            self.is_solved = True
+            self.tracker.mark_completed(self.room.id, self.room.title)
+            feedback.update("[+] [SUCCESS] FLAG ACCEPTED! Room Completed & Recorded!")
             feedback.set_class(True, "success-text")
             feedback.set_class(False, "error-text")
+
+            # Immediately refresh underlying app widgets without waiting for room click
+            if hasattr(self.app, "refresh_room_list"):
+                self.app.refresh_room_list()
+            if hasattr(self.app, "update_content_view"):
+                self.app.update_content_view()
         else:
             feedback.update("[-] [INCORRECT] Keep exploring and check man pages!")
             feedback.set_class(True, "error-text")

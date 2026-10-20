@@ -17,8 +17,9 @@ class ConfirmCleanModal(ModalScreen[bool]):
         with Container(id="modal-dialog"):
             yield Label(f"CLEAN ROOM {self.room.id}?", id="modal-title")
             yield Static(
-                f"This will stop any active container and remove the built image "
-                f"'{self.room.image_tag}'.\n\nAre you sure you want to clean this room?",
+                f"This will stop any active container and remove all local and pulled images "
+                f"for Room {self.room.id} (including localhost and docker.io tags) to free up storage.\n\n"
+                f"Are you sure you want to clean this room?",
                 id="modal-msg",
             )
             with Horizontal(id="modal-buttons"):

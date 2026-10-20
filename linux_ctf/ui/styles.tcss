@@ -29,11 +29,23 @@ Footer {
 
 /* Sidebar */
 #sidebar {
-    width: 28;
+    width: 36;
     background: #161b22;
     border-right: solid #30363d;
     height: 100%;
     padding: 1;
+}
+
+#sidebar-stats-label {
+    text-align: center;
+    color: #7ee787;
+    text-style: bold;
+    margin-bottom: 0;
+}
+
+#sidebar-progress-bar {
+    height: 1;
+    margin-bottom: 1;
 }
 
 #sidebar-title {
@@ -65,9 +77,31 @@ RoomListItem.-selected {
     border-left: double #58a6ff;
 }
 
-RoomListItem Horizontal {
-    height: 1;
-    align-vertical: middle;
+.room-item-box {
+    height: auto;
+}
+
+.room-title-solved {
+    color: #3fb950;
+    text-style: bold;
+}
+
+RoomListItem.-selected .room-title-solved {
+    color: #7ee787;
+    text-style: bold;
+}
+
+.room-title-pending {
+    color: #c9d1d9;
+}
+
+RoomListItem.-selected .room-title-pending {
+    color: #ffffff;
+    text-style: bold;
+}
+
+.room-badge {
+    text-style: bold;
 }
 
 /* Main Content Area */
@@ -202,6 +236,11 @@ RoomListItem Horizontal {
 }
 
 /* Badges */
+.badge-completed {
+    color: #7ee787;
+    text-style: bold;
+}
+
 .badge-ready {
     color: #3fb950;
     text-style: bold;
@@ -215,6 +254,52 @@ RoomListItem Horizontal {
 .badge-running {
     color: #58a6ff;
     text-style: bold;
+}
+
+/* Pull Progress Box */
+#pull-progress-box {
+    display: none;
+    height: auto;
+    background: #161b22;
+    border: solid #58a6ff;
+    padding: 0 1;
+    margin-bottom: 1;
+}
+
+#pull-progress-box.active {
+    display: block;
+}
+
+#pull-status-label {
+    color: #58a6ff;
+    text-style: bold;
+    margin-bottom: 0;
+}
+
+#pull-progress-bar {
+    height: 1;
+    margin-bottom: 0;
+}
+
+/* Dynamic Action Button Highlighting */
+Button.ready-btn {
+    background: #238636;
+    color: #ffffff;
+    text-style: bold;
+}
+
+Button.ready-btn:hover {
+    background: #2ea043;
+}
+
+Button.needed-btn {
+    background: #d29922;
+    color: #0d1117;
+    text-style: bold;
+}
+
+Button.needed-btn:hover {
+    background: #e3b341;
 }
 
 /* Modal Screens */
