@@ -11,10 +11,10 @@ if [ ! -f ".venv/bin/python" ]; then
     echo "[*] Initializing virtual environment with uv..."
     if command -v uv >/dev/null 2>&1; then
         uv venv .venv
-        uv pip install --python .venv/bin/python textual rich
+        uv pip install --python .venv/bin/python -r requirements.txt
     else
         python3 -m venv .venv
-        .venv/bin/pip install textual rich
+        .venv/bin/pip install -r requirements.txt
     fi
 fi
 

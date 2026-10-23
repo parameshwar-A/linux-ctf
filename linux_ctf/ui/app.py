@@ -6,6 +6,7 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Container, Horizontal, Vertical, Grid
 from textual.widgets import Button, Footer, Header, Label, ListItem, ListView, ProgressBar, Static
+from rich.markup import escape
 
 from linux_ctf.models import Room
 from linux_ctf.engine.rooms import RoomRegistry
@@ -234,7 +235,7 @@ class LinuxCTFApp(App):
             hint_btn = None
 
         if self.hint_revealed:
-            hint_widget.update(f"HINT: [bold yellow]{room.hint}[/bold yellow]")
+            hint_widget.update(f"HINT: [bold yellow]{escape(room.hint)}[/bold yellow]")
             hint_widget.add_class("revealed")
             if hint_btn:
                 hint_btn.label = "Hide Hint"
@@ -268,7 +269,7 @@ class LinuxCTFApp(App):
                 box = self.query_one("#pull-progress-box", Vertical)
                 box.set_class(True, "active")
                 label = self.query_one("#pull-status-label", Label)
-                label.update(f"[*] Starting download of {remote_tag} from Docker Hub...")
+                label.update(f"[*] Starting download of {escape(remote_tag)} from Docker Hub...")
                 bar = self.query_one("#pull-progress-bar", ProgressBar)
                 bar.update(progress=5)
                 btn = self.query_one("#btn-pull", Button)
@@ -283,7 +284,7 @@ class LinuxCTFApp(App):
             def update_ui() -> None:
                 try:
                     label = self.query_one("#pull-status-label", Label)
-                    label.update(f"[*] {msg[:75]}")
+                    label.update(f"[*] {escape(msg[:75])}")
                     bar = self.query_one("#pull-progress-bar", ProgressBar)
                     bar.update(progress=pct)
                 except Exception:
@@ -300,10 +301,10 @@ class LinuxCTFApp(App):
                 label = self.query_one("#pull-status-label", Label)
                 bar = self.query_one("#pull-progress-bar", ProgressBar)
                 if success:
-                    label.update(f"[bold green][+] Image {remote_tag} is READY! Click 'Enter Lab' (or 'e') to begin.[/bold green]")
+                    label.update(f"[bold green][+] Image {escape(remote_tag)} is READY! Click 'Enter Lab' (or 'e') to begin.[/bold green]")
                     bar.update(progress=100)
                 else:
-                    label.update(f"[bold red][-] Pull failed: {msg[:70]}[/bold red]")
+                    label.update(f"[bold red][-] Pull failed: {escape(msg[:70])}[/bold red]")
             except Exception:
                 pass
 

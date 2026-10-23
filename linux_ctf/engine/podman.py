@@ -1,15 +1,19 @@
 from __future__ import annotations
 import logging
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Optional, Set, Tuple
 from linux_ctf.models import Room
 from linux_ctf.engine.rooms import find_project_root
 from linux_ctf.engine.secrets import SessionSecret, generate_session_secret
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_REGISTRY = "docker.io/paramesh273"
+_REG_RE = re.compile(r"^[a-z0-9.\-]+(:\d+)?(/[a-z0-9._\-]+)+$")
 
 
 class PodmanError(Exception):
@@ -19,7 +23,13 @@ class PodmanError(Exception):
 class PodmanEngine:
     def __init__(self, project_root: Optional[Path] = None, registry_prefix: Optional[str] = None):
         self.project_root = project_root or find_project_root()
-        self.registry_prefix = registry_prefix if registry_prefix is not None else os.environ.get("LINUX_CTF_REGISTRY", "docker.io/paramesh273")
+        prefix = registry_prefix if registry_prefix is not None else os.environ.get("LINUX_CTF_REGISTRY", DEFAULT_REGISTRY)
+        if prefix:
+            if not _REG_RE.fullmatch(prefix):
+                raise PodmanError(f"Invalid LINUX_CTF_REGISTRY value: {prefix!r}")
+            if prefix != DEFAULT_REGISTRY:
+                logger.warning("Using NON-OFFICIAL registry %s – images are not verified", prefix)
+        self.registry_prefix = prefix
         self.active_sessions: dict[str, SessionSecret] = {}
         self._cached_images: Optional[Set[str]] = None
         self._cached_running_containers: Optional[Set[str]] = None
@@ -307,6 +317,13 @@ class PodmanEngine:
         secret = generate_session_secret(room.id)
         self.active_sessions[room.id] = secret
 
+        env = {
+            **os.environ,
+            "CTF_FLAG": secret.flag,
+            "CTF_SALT": secret.salt,
+            "CTF_HASH": secret.expected_hash,
+        }
+
         cmd = [
             "podman",
             "run",
@@ -316,15 +333,36 @@ class PodmanEngine:
             room.container_name,
             "--hostname",
             f"ctf-room{room.id}",
+            # --- isolation (Finding 6a) ---
+            "--network",
+            "none",
+            "--cap-drop",
+            "ALL",
+            "--cap-add",
+            "CHOWN,DAC_OVERRIDE,FOWNER,SETUID,SETGID",
+            "--security-opt",
+            "no-new-privileges",
+            # --- resource limits ---
+            "--pids-limit",
+            "256",
+            "--memory",
+            "512m",
+            "--memory-swap",
+            "512m",
+            "--cpus",
+            "1.0",
+            "--ulimit",
+            "nofile=1024:1024",
+            # --- secret delivery via env (Finding 9) ---
             "-e",
-            f"CTF_FLAG={secret.flag}",
+            "CTF_FLAG",
             "-e",
-            f"CTF_SALT={secret.salt}",
+            "CTF_SALT",
             "-e",
-            f"CTF_HASH={secret.expected_hash}",
+            "CTF_HASH",
             image_tag,
         ]
-        ret = subprocess.run(cmd).returncode
+        ret = subprocess.run(cmd, env=env).returncode
         self.refresh_cache()
         return ret
 
@@ -339,18 +377,7 @@ class PodmanEngine:
                 return False, "[-] [INCORRECT] Keep exploring and check man pages!"
 
         # Fallback if testing non-interactively without active session
-        image_tag = self.get_image_tag(room)
-        if not self.is_image_built(image_tag):
-            if self.is_image_built(room.image_tag):
-                image_tag = room.image_tag
-            else:
-                return False, (
-                    f"Room {room.id} image is not pulled yet. "
-                    f"Please make it ready first using: pull {room.id}"
-                )
-
-        secret = generate_session_secret(room.id)
-        self.active_sessions[room.id] = secret
-        if secret.verify(flag):
-            return True, "[+] [SUCCESS] FLAG ACCEPTED! Room Completed!"
-        return False, "[-] [INCORRECT] Keep exploring and check man pages!"
+        return False, (
+            f"[-] No active session found for Room {room.id}. "
+            f"Please enter the room first (e.g. 'enter {room.id}') or use 'submit-flag' inside it."
+        )

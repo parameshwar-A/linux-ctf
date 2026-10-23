@@ -1,6 +1,7 @@
 from __future__ import annotations
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Dict, List, Optional
 from linux_ctf.models import Room
@@ -44,8 +45,14 @@ class RoomRegistry:
                     with open(metadata_file, "r", encoding="utf-8") as f:
                         data = json.load(f)
 
+                    raw_id = str(data.get("id", "")).strip()
+                    clean_id = raw_id.zfill(2)
+                    if not re.fullmatch(r"\d{2}", clean_id):
+                        logger.warning(f"Invalid room id '{raw_id}' in {metadata_file}, skipping.")
+                        continue
+
                     room = Room(
-                        id=str(data.get("id", "")).zfill(2),
+                        id=clean_id,
                         slug=data.get("slug", room_path.name),
                         title=data.get("title", "Untitled Room"),
                         tier=data.get("tier", "Beginner"),
@@ -68,9 +75,13 @@ class RoomRegistry:
                     with open(manifest, "r", encoding="utf-8") as f:
                         items = json.load(f)
                     for data in items:
+                        raw_id = str(data.get("id", "")).strip()
+                        clean_id = raw_id.zfill(2)
+                        if not re.fullmatch(r"\d{2}", clean_id):
+                            continue
                         room = Room(
-                            id=str(data.get("id", "")).zfill(2),
-                            slug=data.get("slug", f"level{data.get('id', '')}"),
+                            id=clean_id,
+                            slug=data.get("slug", f"level{clean_id}"),
                             title=data.get("title", "Untitled Room"),
                             tier=data.get("tier", "Beginner"),
                             commands=data.get("commands", []),

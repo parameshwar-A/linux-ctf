@@ -67,16 +67,25 @@ case "$cmd" in
             exit 1
         fi
         echo "[*] Entering room level${room_num} with dynamic session secret..."
-        test_flag="FLAG{l${room_num}_interactive_$(head -c 4 /dev/urandom | xxd -p)}"
-        test_salt="$(head -c 8 /dev/urandom | xxd -p)"
+        test_flag="FLAG{l${room_num}_$(head -c 16 /dev/urandom | xxd -p)}"
+        test_salt="$(head -c 16 /dev/urandom | xxd -p)"
         test_hash=$(echo -n "${test_flag}::${test_salt}" | sha256sum | cut -d' ' -f1)
 
+        CTF_FLAG="$test_flag" CTF_SALT="$test_salt" CTF_HASH="$test_hash" \
         podman run --rm -it \
             --name "linux-ctf-room-${room_num}" \
             --hostname "ctf-room${room_num}" \
-            -e CTF_FLAG="$test_flag" \
-            -e CTF_SALT="$test_salt" \
-            -e CTF_HASH="$test_hash" \
+            --network none \
+            --cap-drop ALL \
+            --cap-add CHOWN,DAC_OVERRIDE,FOWNER,SETUID,SETGID \
+            --security-opt no-new-privileges \
+            --pids-limit 256 \
+            --memory 512m --memory-swap 512m \
+            --cpus 1.0 \
+            --ulimit nofile=1024:1024 \
+            -e CTF_FLAG \
+            -e CTF_SALT \
+            -e CTF_HASH \
             "$tag"
         ;;
     clean)

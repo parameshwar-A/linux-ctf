@@ -24,9 +24,9 @@ class SessionSecret:
 def generate_session_secret(room_id: str) -> SessionSecret:
     """Generates an ephemeral, cryptographically random flag and salted hash."""
     clean_id = str(room_id).zfill(2)
-    token = secrets.token_hex(6)
+    token = secrets.token_hex(16)
     flag = f"FLAG{{l{clean_id}_{token}}}"
-    salt = secrets.token_hex(8)
+    salt = secrets.token_hex(16)
     salted_str = f"{flag}::{salt}"
     expected_hash = hashlib.sha256(salted_str.encode("utf-8")).hexdigest()
 

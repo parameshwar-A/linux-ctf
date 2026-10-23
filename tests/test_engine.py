@@ -69,6 +69,38 @@ class TestLinuxCTFEngine(unittest.TestCase):
         self.assertTrue(ok)
         self.assertIn("ACCEPTED", out)
 
+    def test_flag_entropy(self):
+        secret = generate_session_secret("01")
+        # 16 bytes = 32 hex characters = 128 bits
+        token_part = secret.flag.split("_")[1].rstrip("}")
+        self.assertEqual(len(token_part), 32)
+        self.assertEqual(len(secret.salt), 32)
+
+    def test_registry_validation(self):
+        # Valid registries
+        pe1 = PodmanEngine(registry_prefix="docker.io/paramesh273")
+        self.assertEqual(pe1.registry_prefix, "docker.io/paramesh273")
+        pe2 = PodmanEngine(registry_prefix="quay.io/custom-org")
+        self.assertEqual(pe2.registry_prefix, "quay.io/custom-org")
+
+        # Invalid registries / option injection attempts
+        malicious_inputs = [
+            "--authfile=/etc/shadow",
+            "docker.io/repo; rm -rf /",
+            "docker.io/repo`touch /tmp/hacked`",
+            "invalid prefix with spaces",
+        ]
+        for bad in malicious_inputs:
+            with self.assertRaises(PodmanError):
+                PodmanEngine(registry_prefix=bad)
+
+    def test_test_flag_fallback_without_active_session(self):
+        r1 = self.registry.get_room("01")
+        self.engine.active_sessions.pop(r1.id, None)
+        ok, msg = self.engine.test_flag_against_container(r1, "FLAG{any}")
+        self.assertFalse(ok)
+        self.assertIn("No active session found", msg)
+
 
 if __name__ == "__main__":
     unittest.main()

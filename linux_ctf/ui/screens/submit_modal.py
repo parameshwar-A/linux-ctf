@@ -1,8 +1,9 @@
-from __future__ import annotations
+from typing import Optional
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal
 from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Label, Static
+from rich.markup import escape
 from linux_ctf.models import Room
 from linux_ctf.engine.podman import PodmanEngine
 from linux_ctf.engine.progress import ProgressTracker
@@ -64,7 +65,7 @@ class SubmitModal(ModalScreen[bool]):
         if success:
             self.is_solved = True
             self.tracker.mark_completed(self.room.id, self.room.title)
-            feedback.update("[+] [SUCCESS] FLAG ACCEPTED! Room Completed & Recorded!")
+            feedback.update(f"[bold green]{escape(msg)}[/bold green]")
             feedback.set_class(True, "success-text")
             feedback.set_class(False, "error-text")
 
@@ -74,6 +75,6 @@ class SubmitModal(ModalScreen[bool]):
             if hasattr(self.app, "update_content_view"):
                 self.app.update_content_view()
         else:
-            feedback.update("[-] [INCORRECT] Keep exploring and check man pages!")
+            feedback.update(f"[bold red]{escape(msg)}[/bold red]")
             feedback.set_class(True, "error-text")
             feedback.set_class(False, "success-text")
