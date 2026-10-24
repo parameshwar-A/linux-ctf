@@ -58,7 +58,7 @@
       "rm",
       "rmdir"
     ],
-    "mission": "The storage area 'sandbox/clutter' is full of junk. Locate 'sandbox/clutter/secret_*.txt' amidst the clutter, create the directory 'sandbox/secure_vault', and move the key into it. Run './verify_vault' to decrypt the vault and reveal the flag!",
+    "mission": "The storage area 'sandbox/clutter' is full of junk. Create the directory 'sandbox/secure_vault', move 'sandbox/clutter/secret_key.txt' into it, and clean up all remaining debris and empty directories in 'sandbox/clutter' using 'rm' and 'rmdir'. Run './verify_vault' to reveal the flag!",
     "hint": "Use 'man -k <keyword>' for keyword based searches. Search man pages for keywords like directories / make / remove"
   },
   {

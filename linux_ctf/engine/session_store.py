@@ -52,7 +52,6 @@ class SessionStore:
         temp_path = file_path.with_suffix(".tmp")
         data = {
             "room_id": secret.room_id,
-            "flag": secret.flag,
             "salt": secret.salt,
             "expected_hash": secret.expected_hash,
             "created_at": secret.created_at,
@@ -75,7 +74,7 @@ class SessionStore:
                 data = json.load(f)
             return SessionSecret(
                 room_id=data["room_id"],
-                flag=data["flag"],
+                flag=data.get("flag", ""),
                 salt=data["salt"],
                 expected_hash=data["expected_hash"],
                 created_at=data.get("created_at", 0.0),
