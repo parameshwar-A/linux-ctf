@@ -279,6 +279,26 @@ class PodmanEngine:
             capture_output=True,
             text=True,
         )
+
+        # Clean up any lingering podman secrets for this room
+        try:
+            sec_res = subprocess.run(
+                ["podman", "secret", "ls", "--format", "{{.Name}}"],
+                capture_output=True,
+                text=True,
+            )
+            if sec_res.returncode == 0:
+                for s_name in sec_res.stdout.splitlines():
+                    s_name = s_name.strip()
+                    if s_name.startswith(f"ctf-flag-{room.id}-"):
+                        subprocess.run(
+                            ["podman", "secret", "rm", s_name],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                        )
+        except Exception:
+            pass
+
         self.session_store.remove(room.id)
         self.active_sessions.pop(room.id, None)
         self.refresh_cache()
@@ -299,6 +319,26 @@ class PodmanEngine:
                     messages.append(f"Cleaned Room {room.id}")
                 else:
                     messages.append(f"Failed to clean Room {room.id}: {msg}")
+
+        # Clean up all lingering linux-ctf secrets
+        try:
+            sec_res = subprocess.run(
+                ["podman", "secret", "ls", "--format", "{{.Name}}"],
+                capture_output=True,
+                text=True,
+            )
+            if sec_res.returncode == 0:
+                for s_name in sec_res.stdout.splitlines():
+                    s_name = s_name.strip()
+                    if s_name.startswith("ctf-flag-"):
+                        subprocess.run(
+                            ["podman", "secret", "rm", s_name],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                        )
+        except Exception:
+            pass
+
         self.session_store.clear()
         self.active_sessions.clear()
         return removed_count, messages
@@ -364,6 +404,8 @@ class PodmanEngine:
             "1.0",
             "--ulimit",
             "nofile=1024:1024",
+            "--ulimit",
+            "fsize=104857600:104857600",
             # --- secret delivery via podman secret mount (Finding 9) ---
             "--secret",
             f"{secret_name},target=ctf_flag,mode=0400",

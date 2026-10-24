@@ -2,6 +2,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+import re
 from typing import Optional
 from linux_ctf.engine.secrets import SessionSecret
 
@@ -37,8 +38,12 @@ class SessionStore:
             pass
 
     def _get_path(self, room_id: str) -> Path:
-        clean_id = str(room_id).lower().replace("level", "").strip().zfill(2)
-        return self.sessions_dir / f"{clean_id}.json"
+        raw_id = str(room_id).lower().replace("level", "").strip()
+        clean_id = re.sub(r"[^0-9a-zA-Z_-]", "", raw_id).zfill(2)
+        target = (self.sessions_dir / f"{clean_id}.json").resolve()
+        if self.sessions_dir.resolve() not in target.parents:
+            raise ValueError(f"Path traversal detected in room_id: {room_id!r}")
+        return target
 
     def save(self, secret: SessionSecret) -> None:
         """Saves session secret to owner-only 0600 file."""
@@ -53,9 +58,9 @@ class SessionStore:
             "created_at": secret.created_at,
         }
         try:
-            with open(temp_path, "w", encoding="utf-8") as f:
+            fd = os.open(temp_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
-            os.chmod(temp_path, 0o600)
             temp_path.replace(file_path)
         except Exception:
             pass

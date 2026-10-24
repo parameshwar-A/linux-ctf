@@ -86,6 +86,7 @@ case "$cmd" in
             --memory 512m --memory-swap 512m \
             --cpus 1.0 \
             --ulimit nofile=1024:1024 \
+            --ulimit fsize=104857600:104857600 \
             --secret "${secret_name},target=ctf_flag,mode=0400" \
             "$tag"
 
@@ -93,9 +94,10 @@ case "$cmd" in
         trap - EXIT
         ;;
     clean)
-        echo "[*] Cleaning up linux-ctf containers..."
+        echo "[*] Cleaning up linux-ctf containers and secrets..."
         podman ps -a --filter "name=linux-ctf-*" --format "{{.ID}}" | xargs -r podman rm -f
-        echo "[+] Cleaned up active containers."
+        podman secret ls --format "{{.Name}}" | grep -E '^ctf-flag-' | xargs -r podman secret rm 2>/dev/null || true
+        echo "[+] Cleaned up active containers and secrets."
         ;;
     clean-room|clean-image)
         room_num=$(normalize_room "${1:-01}")
@@ -104,13 +106,15 @@ case "$cmd" in
         echo "[*] Cleaning Room ${room_num} (container: $cname, image: $tag)..."
         podman rm -f "$cname" 2>/dev/null || true
         podman rmi -f "$tag" 2>/dev/null || true
+        podman secret ls --format "{{.Name}}" | grep -E "^ctf-flag-${room_num}-" | xargs -r podman secret rm 2>/dev/null || true
         echo "[+] Room ${room_num} cleaned."
         ;;
     clean-rooms|clean-images)
-        echo "[*] Cleaning up all room containers and images..."
+        echo "[*] Cleaning up all room containers, images, and secrets..."
         podman ps -a --filter "name=linux-ctf-*" --format "{{.ID}}" | xargs -r podman rm -f
         podman images --filter "reference=*linux-ctf-level*" --format "{{.ID}}" | xargs -r podman rmi -f
-        echo "[+] All room containers and images removed."
+        podman secret ls --format "{{.Name}}" | grep -E '^ctf-flag-' | xargs -r podman secret rm 2>/dev/null || true
+        echo "[+] All room containers, images, and secrets removed."
         ;;
     *)
         usage
