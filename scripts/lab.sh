@@ -26,8 +26,14 @@ usage() {
 }
 
 normalize_room() {
-    local raw="$1"
+    local raw="${1:-01}"
     raw="${raw#level}"
+    # Strip any non-digit character to neutralize bash arithmetic injection
+    raw="${raw//[!0-9]/}"
+    if [ -z "$raw" ]; then
+        echo "01"
+        return
+    fi
     printf "%02d" "$((10#$raw))"
 }
 
