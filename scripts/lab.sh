@@ -67,11 +67,14 @@ case "$cmd" in
             exit 1
         fi
         echo "[*] Entering room level${room_num} with dynamic session secret..."
-        test_flag="FLAG{l${room_num}_$(head -c 16 /dev/urandom | xxd -p)}"
-        test_salt="$(head -c 16 /dev/urandom | xxd -p)"
-        test_hash=$(echo -n "${test_flag}::${test_salt}" | sha256sum | cut -d' ' -f1)
+        test_tok=$(python3 -c "import secrets; print(secrets.token_hex(16))")
+        test_flag="FLAG{l${room_num}_${test_tok}}"
+        secret_name="ctf-flag-${room_num}-${test_tok:0:8}"
 
-        CTF_FLAG="$test_flag" CTF_SALT="$test_salt" CTF_HASH="$test_hash" \
+        echo -n "$test_flag" | podman secret create "$secret_name" - >/dev/null 2>&1
+
+        trap 'podman secret rm "$secret_name" >/dev/null 2>&1 || true' EXIT
+
         podman run --rm -it \
             --name "linux-ctf-room-${room_num}" \
             --hostname "ctf-room${room_num}" \
@@ -83,10 +86,11 @@ case "$cmd" in
             --memory 512m --memory-swap 512m \
             --cpus 1.0 \
             --ulimit nofile=1024:1024 \
-            -e CTF_FLAG \
-            -e CTF_SALT \
-            -e CTF_HASH \
+            --secret "${secret_name},target=ctf_flag,mode=0400" \
             "$tag"
+
+        podman secret rm "$secret_name" >/dev/null 2>&1 || true
+        trap - EXIT
         ;;
     clean)
         echo "[*] Cleaning up linux-ctf containers..."

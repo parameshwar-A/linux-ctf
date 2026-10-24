@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+import secrets
 import shutil
 import subprocess
 from pathlib import Path
@@ -9,6 +10,7 @@ from typing import Callable, List, Optional, Set, Tuple
 from linux_ctf.models import Room
 from linux_ctf.engine.rooms import find_project_root
 from linux_ctf.engine.secrets import SessionSecret, generate_session_secret
+from linux_ctf.engine.session_store import SessionStore
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,7 @@ class PodmanEngine:
             if prefix != DEFAULT_REGISTRY:
                 logger.warning("Using NON-OFFICIAL registry %s – images are not verified", prefix)
         self.registry_prefix = prefix
+        self.session_store = SessionStore()
         self.active_sessions: dict[str, SessionSecret] = {}
         self._cached_images: Optional[Set[str]] = None
         self._cached_running_containers: Optional[Set[str]] = None
@@ -276,6 +279,8 @@ class PodmanEngine:
             capture_output=True,
             text=True,
         )
+        self.session_store.remove(room.id)
+        self.active_sessions.pop(room.id, None)
         self.refresh_cache()
         success = (res.returncode == 0) or not self.is_image_ready(room)
         return success, res.stdout + res.stderr
@@ -294,6 +299,8 @@ class PodmanEngine:
                     messages.append(f"Cleaned Room {room.id}")
                 else:
                     messages.append(f"Failed to clean Room {room.id}: {msg}")
+        self.session_store.clear()
+        self.active_sessions.clear()
         return removed_count, messages
 
     delete_all_room_images = clean_all_rooms
@@ -316,13 +323,17 @@ class PodmanEngine:
         # Generate ephemeral dynamic session secret for this run
         secret = generate_session_secret(room.id)
         self.active_sessions[room.id] = secret
+        self.session_store.save(secret)
 
-        env = {
-            **os.environ,
-            "CTF_FLAG": secret.flag,
-            "CTF_SALT": secret.salt,
-            "CTF_HASH": secret.expected_hash,
-        }
+        secret_name = f"ctf-flag-{room.id}-{secrets.token_hex(4)}"
+        # Create temporary Podman secret for root-only tmpfs secret delivery
+        subprocess.run(
+            ["podman", "secret", "create", secret_name, "-"],
+            input=secret.flag.encode(),
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
 
         cmd = [
             "podman",
@@ -353,25 +364,29 @@ class PodmanEngine:
             "1.0",
             "--ulimit",
             "nofile=1024:1024",
-            # --- secret delivery via env (Finding 9) ---
-            "-e",
-            "CTF_FLAG",
-            "-e",
-            "CTF_SALT",
-            "-e",
-            "CTF_HASH",
+            # --- secret delivery via podman secret mount (Finding 9) ---
+            "--secret",
+            f"{secret_name},target=ctf_flag,mode=0400",
             image_tag,
         ]
-        ret = subprocess.run(cmd, env=env).returncode
-        self.refresh_cache()
+        try:
+            ret = subprocess.run(cmd).returncode
+        finally:
+            subprocess.run(
+                ["podman", "secret", "rm", secret_name],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            self.refresh_cache()
         return ret
 
     def test_flag_against_container(self, room: Room, flag: str) -> Tuple[bool, str]:
-        """Tests flag validity against active session or in-container validator."""
-        # Fast path: check against active session in memory
-        active = self.active_sessions.get(room.id)
+        """Tests flag validity against active session or persisted session store."""
+        active = self.active_sessions.get(room.id) or self.session_store.get(room.id)
         if active:
             if active.verify(flag):
+                self.session_store.remove(room.id)
+                self.active_sessions.pop(room.id, None)
                 return True, "[+] [SUCCESS] FLAG ACCEPTED! Room Completed!"
             else:
                 return False, "[-] [INCORRECT] Keep exploring and check man pages!"

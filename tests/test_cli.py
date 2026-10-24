@@ -78,6 +78,22 @@ class TestLinuxCTFCLI(unittest.TestCase):
             self.assertEqual(code, 1)
             self.assertIn("INCORRECT", output)
 
+    @patch.object(PodmanEngine, "is_image_ready", return_value=True)
+    def test_cli_verify_with_session_store(self, mock_ready):
+        r1 = self.registry.get_room("01")
+        secret = generate_session_secret(r1.id)
+        # Session was saved to session store during interactive enter
+        self.engine.session_store.save(secret)
+        self.engine.active_sessions.clear()
+
+        args = argparse.Namespace(room_id="01", flag=secret.flag)
+        with patch("sys.stdout", new=StringIO()) as fake_out:
+            code = cmd_verify(self.registry, self.engine, args)
+            output = fake_out.getvalue()
+            self.assertEqual(code, 0)
+            self.assertIn("ACCEPTED", output)
+            self.assertIn("marked as COMPLETED", output)
+
 
 if __name__ == "__main__":
     unittest.main()

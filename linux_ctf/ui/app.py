@@ -38,10 +38,10 @@ class RoomListItem(ListItem):
             container_badge = "badge-unbuilt"
 
         if self.is_done:
-            title_text = f"[{self.room.id}] [SOLVED] {self.room.title}"
+            title_text = f"[{self.room.id}] [SOLVED] {escape(self.room.title)}"
             title_class = "room-title-solved"
         else:
-            title_text = f"[{self.room.id}] {self.room.title}"
+            title_text = f"[{self.room.id}] {escape(self.room.title)}"
             title_class = "room-title-pending"
 
         with Vertical(classes="room-item-box"):
@@ -199,10 +199,10 @@ class LinuxCTFApp(App):
 
         # Update Header
         self.query_one("#room-title", Label).update(
-            f"[bold cyan]ROOM {room.id} : {room.title.upper()}[/bold cyan]  {img_badge}  {comp_badge}"
+            f"[bold cyan]ROOM {room.id} : {escape(room.title.upper())}[/bold cyan]  {img_badge}  {comp_badge}"
         )
         self.query_one("#room-meta", Label).update(
-            f"Tier: [white]{room.tier}[/white]  |  Image: [dim]{self.engine.get_image_tag(room)}[/dim]  |  Status: {status_desc}"
+            f"Tier: [white]{escape(room.tier)}[/white]  |  Image: [dim]{escape(self.engine.get_image_tag(room))}[/dim]  |  Status: {status_desc}"
         )
 
         # Update Button cues
@@ -224,7 +224,7 @@ class LinuxCTFApp(App):
 
         # Update Mission Text
         self.query_one("#mission-text", Static).update(
-            f"[bold white]{room.mission}[/bold white]"
+            f"[bold white]{escape(room.mission)}[/bold white]"
         )
 
         # Update Hint Card and Button Label

@@ -10,6 +10,7 @@ class TestLinuxCTFEngine(unittest.TestCase):
     def setUp(self):
         self.registry = RoomRegistry()
         self.engine = PodmanEngine()
+        self.engine.session_store.clear()
 
     def test_room_discovery(self):
         rooms = self.registry.list_rooms()
@@ -97,9 +98,24 @@ class TestLinuxCTFEngine(unittest.TestCase):
     def test_test_flag_fallback_without_active_session(self):
         r1 = self.registry.get_room("01")
         self.engine.active_sessions.pop(r1.id, None)
+        self.engine.session_store.remove(r1.id)
         ok, msg = self.engine.test_flag_against_container(r1, "FLAG{any}")
         self.assertFalse(ok)
         self.assertIn("No active session found", msg)
+
+    def test_session_store_persistence(self):
+        r1 = self.registry.get_room("01")
+        secret = generate_session_secret(r1.id)
+        self.engine.session_store.save(secret)
+        self.engine.active_sessions.clear()
+
+        # In-memory session is empty, but session_store should find it
+        ok, msg = self.engine.test_flag_against_container(r1, secret.flag)
+        self.assertTrue(ok)
+        self.assertIn("ACCEPTED", msg)
+
+        # After successful verification, session should be cleaned up
+        self.assertIsNone(self.engine.session_store.get(r1.id))
 
 
 if __name__ == "__main__":
